@@ -9,6 +9,9 @@ import android.widget.TextView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -42,6 +45,23 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
 
         txt_output.setText(result.toString());
         //Wearable.ChannelApi.openChannel(mGoogleApiClient,)
+
+        //TODO test123
+        PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+        results.setResultCallback(new ResultCallback<DataItemBuffer>() {
+            @Override
+            public void onResult(DataItemBuffer dataItems) {
+                if (dataItems.getCount() != 0) {
+                    DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
+
+                    // This should read the correct value.
+                    int value = dataMapItem.getDataMap().getInt("x");
+
+                }
+
+                dataItems.release();
+            }
+        });
     }
 
     @Override

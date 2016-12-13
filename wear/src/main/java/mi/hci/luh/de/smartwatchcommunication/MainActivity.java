@@ -15,6 +15,10 @@ import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -25,9 +29,6 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends WearableActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, SensorEventListener {
-
-    private static final SimpleDateFormat AMBIENT_DATE_FORMAT =
-            new SimpleDateFormat("HH:mm", Locale.US);
 
     private BoxInsetLayout mContainerView;
     private TextView mTextView;
@@ -135,8 +136,9 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 //        }
         if (event.sensor == gameRotationSensor) {
             float[] vx = event.values;
-            sensorZ.setText(String.format("a: %.3f, %.3f, %.3f", vx[0], vx[1], vx[2]));
+            sensorZ.setText(String.format("%.3f,%.3f,%.3f", vx[0], vx[1], vx[2]));
             sendSensorData(vx[0],0,0);
+            Log.d("SendData", String.valueOf(vx[0]));
         }
 
     }
