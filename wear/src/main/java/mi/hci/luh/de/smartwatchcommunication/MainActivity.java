@@ -138,7 +138,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             float[] vx = event.values;
             sensorZ.setText(String.format("%.3f,%.3f,%.3f", vx[0], vx[1], vx[2]));
             sendSensorData(vx[0],0,0);
-            Log.d("SendData", String.valueOf(vx[0]));
+            //Log.d("SendData", String.valueOf(vx[0]));
         }
 
     }

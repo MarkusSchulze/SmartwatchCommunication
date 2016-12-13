@@ -1,5 +1,7 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
+import android.util.Log;
+
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMap;
@@ -17,7 +19,7 @@ public class MyService extends WearableListenerService {
                 String path = dataEvent.getDataItem().getUri().getPath();
                 if (path.equals("SensorData")) {
                     MainActivity.setSensorText(dataMap.getFloat("x"),0,0);
-
+                    Log.d("receiveData", String.valueOf(dataMap.getFloat("x")));
                 }
             }
         }
