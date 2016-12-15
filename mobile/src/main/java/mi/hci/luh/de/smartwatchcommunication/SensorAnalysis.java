@@ -37,7 +37,6 @@ public class SensorAnalysis extends Activity{
     private SensorManager sensorManager;
     private Canvas canvas;
     private Paint paint;
-    private Bitmap bg;
     private Button BigB;
     private int clickCount = 0;
     private float currentX, currentY, topY, bottomY, leftX, rightX, middleX, middleY;
@@ -177,10 +176,6 @@ public class SensorAnalysis extends Activity{
             //canvas.drawRect(point_y, point_x, point_y+10, point_x+10, paint);
 
             canvas.drawRect(20, 20, 30, 30, paint);
-
-
-            LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
-            ll.setBackgroundDrawable(new BitmapDrawable(bg));
 
         }
     }
