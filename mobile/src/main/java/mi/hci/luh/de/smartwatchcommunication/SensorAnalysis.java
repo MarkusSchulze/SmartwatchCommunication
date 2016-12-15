@@ -122,29 +122,8 @@ public class SensorAnalysis extends Activity{
             float[] v = event.values;
             Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
 
-            float accX_old = accX;
-            float accY_old = accY;
+            this.accToPath(v);
 
-            // Filter Acceleration
-            double threshold = 0.2;
-            accX = ((v[1] < threshold) && (!(v[1] < -threshold))) ? 0 : v[1];
-            accY = ((v[2] < threshold) && (!(v[2] < -threshold))) ? 0 : v[2];
-
-            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-            Log.d("currentTime", String.format("CurrentTime: %d", currentTime.getTime()));
-
-            if (lastLinAccTime == null) {
-                lastLinAccTime = currentTime;
-            }
-            double deltaTime = (currentTime.getTime() - lastLinAccTime.getTime());
-
-            double deltaTime_square = Math.pow(deltaTime, 2.0) / 100000;
-
-            distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
-            distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
-
-            lastLinAccTime = currentTime;
-            //Log.d("deltaTime", String.format("DeltaTime: %d", deltaTime));
             Log.d("distX", String.format("distX: %f", distX));
             Log.d("distY", String.format("distY: %f", distY));
 
@@ -159,14 +138,13 @@ public class SensorAnalysis extends Activity{
 
             int point_x, point_y = 0;
             if (this.calibrated) {
-                float mid_x = (rightX + leftX) / 2;
-                float mid_y = (topY + bottomY) / 2;
+                double[] coordinates = null;
+                coordinates = this.calibrateCoordinates(currentX, currentY);
 
-                float x = (currentX - mid_x) / ((rightX - leftX) / 2);
-                float y = (currentY - mid_y) / ((topY - bottomY) / 2);
+                double x = coordinates[0];
+                double y = coordinates[1];
 
-                //point_x = (int) (x * 1080/2 + 1080/2 * (1-middleX));
-                //point_y = (int) (y * 1920/2 + 1920/2 * (1-middleY));
+
                 point_x = (int) (x * w / 2 + w / 2);
                 point_y = (int) (y * h / 2 + h / 2);
             } else {
@@ -206,24 +184,67 @@ public class SensorAnalysis extends Activity{
 
         }
     }
-    public double[] calibrate(double x_in, double y_in, double z_in) {
+    public double[] calibrateCoordinates(double x_in, double y_in) {
+
+        double[] coordinates = null;
 
         if (this.calibrated) {
             float mid_x = (rightX + leftX) / 2;
             float mid_y = (topY + bottomY) / 2;
 
-            float x = (currentX - mid_x) / ((rightX - leftX) / 2);
-            float y = (currentY - mid_y) / ((topY - bottomY) / 2);
+            coordinates[0] = (currentX - mid_x) / ((rightX - leftX) / 2);
+            coordinates[1] = (currentY - mid_y) / ((topY - bottomY) / 2);
 
-            //point_x = (int) (x * 1080/2 + 1080/2 * (1-middleX));
-            //point_y = (int) (y * 1920/2 + 1920/2 * (1-middleY));
-            point_x = (int) (x * w / 2 + w / 2);
-            point_y = (int) (y * h / 2 + h / 2);
-        } else {
-            point_x = (int) (currentX * h / 2) + h / 2;
-            point_y = (int) (currentY * w / 2) + w / 2;
         }
+
+        return coordinates;
+
+    }
+    public int[] mapCoordinatesToDisplay(double x_in, double y_in, int w, int h) {
+        int[] coordinates = null;
+
+        int point_x = (int) (x_in * w / 2 + w / 2);
+        int point_y = (int) (y_in * h / 2 + h / 2);
+
+        if (point_x > h) {
+            point_x = h;
+        }
+        if (point_x < 0) {
+            point_x = 0;
+        }
+        if (point_y > w) {
+            point_y = w;
+        }
+        if (point_y < 0) {
+            point_y = 0;
+        }
+
+        return coordinates;
     }
 
+    public void accToPath(float[] v) {
 
+        float accX_old = accX;
+        float accY_old = accY;
+
+        // Filter Acceleration
+        double threshold = 0.2;
+        accX = ((v[1] < threshold) && (!(v[1] < -threshold))) ? 0 : v[1];
+        accY = ((v[2] < threshold) && (!(v[2] < -threshold))) ? 0 : v[2];
+
+        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+        Log.d("currentTime", String.format("CurrentTime: %d", currentTime.getTime()));
+
+        if (lastLinAccTime == null) {
+            lastLinAccTime = currentTime;
+        }
+        double deltaTime = (currentTime.getTime() - lastLinAccTime.getTime());
+
+        double deltaTime_square = Math.pow(deltaTime, 2.0) / 100000;
+
+        distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
+        distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
+
+
+    }
 }
