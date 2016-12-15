@@ -38,6 +38,7 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        //vorläufiger Button zur Aktualisierung der Empfangsdaten
         txt_output = (TextView) findViewById(R.id.output);
         showData = (Button) findViewById(R.id.refresh);
         showData.setOnClickListener(new View.OnClickListener() {
@@ -61,8 +62,7 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
             }
         });
 
-        // ATTENTION: This "addApi(AppIndex.API)"was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        // Init Google Service API
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
                 .addConnectionCallbacks(this)
@@ -74,7 +74,6 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
         result = Wearable.CapabilityApi.getAllCapabilities(mGoogleApiClient, FILTER_REACHABLE);
 
         txt_output.setText(result.toString());
-        //Wearable.ChannelApi.openChannel(mGoogleApiClient,)
     }
 
     @Override
