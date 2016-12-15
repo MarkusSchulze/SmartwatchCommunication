@@ -33,8 +33,6 @@ import static android.content.Context.SENSOR_SERVICE;
  */
 
 public class SensorAnalysis extends Activity{
-    private Sensor accSensor, gyroSensor, accCleanSensor, gameRotationSensor, linearAccSensor;
-    private SensorManager sensorManager;
     private Canvas canvas;
     private Paint paint;
     private Button BigB;
@@ -47,6 +45,13 @@ public class SensorAnalysis extends Activity{
     private static TextView txt_output;
     private Button showData;
     private Bitmap bg;
+    private String lastDataType;
+    private final Float[] lastData = new Float[3];
+    private GoogleApiClient mGoogleApiClient;
+
+    public SensorAnalysis() {
+        mGoogleApiClient = null;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +62,7 @@ public class SensorAnalysis extends Activity{
         paint.setColor(Color.parseColor("#CD5C5C"));
         bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bg);
-        final GoogleApiClient mGoogleApiClient = MainActivity.getAPI();
+        mGoogleApiClient = MainActivity.getAPI();
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
         ll.setBackgroundDrawable(new BitmapDrawable(bg));
@@ -78,6 +83,11 @@ public class SensorAnalysis extends Activity{
                             float value = dataMapItem.getDataMap().getFloat("x");
                             Log.d("receiveDataMain", String.valueOf(value));
                             txt_output.setText(String.valueOf(value));
+
+                            lastDataType = dataMapItem.getDataMap().getString("TYPE");
+                            lastData[0] = dataMapItem.getDataMap().getFloat("x");
+                            lastData[1] = dataMapItem.getDataMap().getFloat("y");
+                            lastData[2] = dataMapItem.getDataMap().getFloat("z");
                         }
 
                         dataItems.release();
@@ -116,9 +126,9 @@ public class SensorAnalysis extends Activity{
         }
         clickCount++;
     }
-    public void drawSensorData(SensorEvent event) {
-        if (event.sensor == linearAccSensor) {
-            float[] v = event.values;
+    public void drawSensorData() {
+        if (lastDataType == "LINEAR_ACC") {
+            Float[] v = lastData;
             Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
 
             this.accToPath(v);
@@ -127,8 +137,8 @@ public class SensorAnalysis extends Activity{
             Log.d("distY", String.format("distY: %f", distY));
 
         }
-        if (event.sensor == gameRotationSensor) {
-            float[] vx = event.values;
+        if (lastDataType == "GAME_ROTATION") {
+            Float[] vx = lastData;
             //Log.d("Game", String.format("%.3f, %.3f, %.3f", vx[0], vx[1], vx[2]));
             currentX = (-1) * vx[2];
             currentY = (-1) * vx[1];
@@ -196,7 +206,7 @@ public class SensorAnalysis extends Activity{
         return coordinates;
     }
 
-    public void accToPath(float[] v) {
+    public void accToPath(Float[] v) {
 
         float accX_old = accX;
         float accY_old = accY;
