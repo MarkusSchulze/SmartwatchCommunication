@@ -134,48 +134,25 @@ public class SensorAnalysis extends Activity{
             currentY = (-1) * vx[1];
             int w = bg.getWidth();
             int h = bg.getHeight();
+            double x, y;
 
-            int point_x, point_y = 0;
             if (this.calibrated) {
                 double[] coordinates = null;
                 coordinates = this.calibrateCoordinates(currentX, currentY);
 
-                double x = coordinates[0];
-                double y = coordinates[1];
+                x = coordinates[0];
+                y = coordinates[1];
 
-
-                point_x = (int) (x * w / 2 + w / 2);
-                point_y = (int) (y * h / 2 + h / 2);
             } else {
-                point_x = (int) (currentX * h / 2) + h / 2;
-                point_y = (int) (currentY * w / 2) + w / 2;
-            }
-            // Z = X-Achse ()
-            // Y = Y-Achse ()
-            //if(clickCount > 4) {
-            //int x = (int)
-            //int y = ()
-            //}
-            //Log.d("Game", String.format("%f x %f", vx[2], vx[1]));
-            //Log.d("Game", String.format("%d x %d", point_x, point_y));
+                x = currentX;
+                y = currentY;
 
-            if (point_x > h) {
-                point_x = h;
             }
-            if (point_x < 0) {
-                point_x = 0;
-            }
-            if (point_y > w) {
-                point_y = w;
-            }
-            if (point_y < 0) {
-                point_y = 0;
-            }
-            canvas.drawRect(point_y, point_x, point_y + 10, point_x + 10, paint);
 
-            //canvas.drawRect(point_y, point_x, point_y+10, point_x+10, paint);
+            int pixel[] = null;
+            pixel = this.mapCoordinatesToDisplay(x, y, w, h);
 
-            canvas.drawRect(20, 20, 30, 30, paint);
+            canvas.drawRect(pixel[1], pixel[0], pixel[1] + 10, pixel[0] + 10, paint);
 
         }
     }
@@ -214,6 +191,8 @@ public class SensorAnalysis extends Activity{
             point_y = 0;
         }
 
+        coordinates[0] = point_x;
+        coordinates[1] = point_y;
         return coordinates;
     }
 
