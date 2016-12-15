@@ -1,5 +1,8 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
+import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -8,6 +11,7 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.appindexing.Action;
@@ -29,38 +33,12 @@ import static mi.hci.luh.de.smartwatchcommunication.R.styleable.View;
 
 public class MainActivity extends FragmentActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
-    private GoogleApiClient mGoogleApiClient;
-    private static TextView txt_output;
-    private Button showData;
+    private static GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        //vorläufiger Button zur Aktualisierung der Empfangsdaten
-        txt_output = (TextView) findViewById(R.id.output);
-        showData = (Button) findViewById(R.id.refresh);
-        showData.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
-                results.setResultCallback(new ResultCallback<DataItemBuffer>() {
-                    @Override
-                    public void onResult(DataItemBuffer dataItems) {
-                        if (dataItems.getCount() != 0) {
-                            DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
-
-                            // This should read the correct value.
-                            float value = dataMapItem.getDataMap().getFloat("x");
-                            Log.d("receiveDataMain", String.valueOf(value));
-                            txt_output.setText(String.valueOf(value));
-                        }
-
-                        dataItems.release();
-                    }
-                });
-            }
-        });
 
         // Init Google Service API
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -70,10 +48,12 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
                 .addApi(AppIndex.API).build();
         mGoogleApiClient.connect();
 
-        PendingResult result;
-        result = Wearable.CapabilityApi.getAllCapabilities(mGoogleApiClient, FILTER_REACHABLE);
+        Intent i = new Intent(this, SensorAnalysis.class);
+        startActivity(i);
+    }
 
-        txt_output.setText(result.toString());
+    public static GoogleApiClient getAPI (){
+        return mGoogleApiClient;
     }
 
     @Override
@@ -93,7 +73,7 @@ public class MainActivity extends FragmentActivity implements GoogleApiClient.On
     }
 
     public static void setSensorText(Float x, float y, float z){
-        txt_output.setText(x.toString());
+
     }
 
     /**

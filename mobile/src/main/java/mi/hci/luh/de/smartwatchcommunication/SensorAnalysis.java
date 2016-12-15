@@ -1,5 +1,6 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -13,15 +14,25 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
 
 import java.sql.Timestamp;
 import java.util.List;
+
+import static android.content.Context.SENSOR_SERVICE;
 
 /**
  * Created by Vincent on 15.12.16.
  */
 
-public class SensorAnalysis {
+public class SensorAnalysis extends Activity{
     private Sensor accSensor, gyroSensor, accCleanSensor, gameRotationSensor, linearAccSensor;
     private SensorManager sensorManager;
     private Canvas canvas;
@@ -34,46 +45,49 @@ public class SensorAnalysis {
     private double distX, distY;
     private boolean calibrated;
     private Timestamp lastLinAccTime;
+    private static TextView txt_output;
+    private Button showData;
+    private Bitmap bg;
 
-    protected void SensorAnalysis() {
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //setContentView(new CustomView(this));
         setContentView(R.layout.activity_main);
 
         paint = new Paint();
         paint.setColor(Color.parseColor("#CD5C5C"));
         bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bg);
-        //canvas.drawRect(50, 50, 200, 200, paint);
-        LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
+        final GoogleApiClient mGoogleApiClient = MainActivity.getAPI();
+
+        LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
         ll.setBackgroundDrawable(new BitmapDrawable(bg));
 
-
-        sensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        List<Sensor> sensorList = sensorManager.getSensorList(Sensor.TYPE_ALL);
-        for (Sensor sensor : sensorList) {
-            Log.d("MainActivity", sensor.toString());
-        }
-
-        accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        accCleanSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-        gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
-        linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-
-        sensorManager.registerListener(this, accSensor, 100 * 1000);
-        sensorManager.registerListener(this, gyroSensor, 100 * 1000);
-        sensorManager.registerListener(this, accCleanSensor, 100 * 1000);
-        sensorManager.registerListener(this, gameRotationSensor, 100 * 1000);
-
-        BigB = (Button) findViewById(R.id.BigButton);
-
-        BigB.setOnClickListener(new View.OnClickListener() {
+        //vorläufiger Button zur Aktualisierung der Empfangsdaten
+        txt_output = (TextView) findViewById(R.id.output);
+        showData = (Button) findViewById(R.id.refresh);
+        showData.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                ClickButton();
+                PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+                results.setResultCallback(new ResultCallback<DataItemBuffer>() {
+                    @Override
+                    public void onResult(DataItemBuffer dataItems) {
+                        if (dataItems.getCount() != 0) {
+                            DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
+
+                            // This should read the correct value.
+                            float value = dataMapItem.getDataMap().getFloat("x");
+                            Log.d("receiveDataMain", String.valueOf(value));
+                            txt_output.setText(String.valueOf(value));
+                        }
+
+                        dataItems.release();
+                    }
+                });
             }
         });
     }
+
     public void ClickButton(){
 
         switch(clickCount) {
