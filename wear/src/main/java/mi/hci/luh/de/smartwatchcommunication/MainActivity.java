@@ -47,8 +47,6 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         setAmbientEnabled();
 
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
-        mTextView = (TextView) findViewById(R.id.sensor_X);
-        //mClockView = (TextView) findViewById(R.id.clock);
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
@@ -91,13 +89,17 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     private void updateDisplay() {
         if (isAmbient()) {
             mContainerView.setBackgroundColor(getResources().getColor(android.R.color.black));
-            mTextView.setTextColor(getResources().getColor(android.R.color.white));
+            sensorY.setTextColor(getResources().getColor(android.R.color.white));
+            sensorX.setTextColor(getResources().getColor(android.R.color.white));
+            sensorZ.setTextColor(getResources().getColor(android.R.color.white));
             //mClockView.setVisibility(View.VISIBLE);
 
             //mClockView.setText(AMBIENT_DATE_FORMAT.format(new Date()));
         } else {
             mContainerView.setBackground(null);
-            mTextView.setTextColor(getResources().getColor(android.R.color.black));
+            sensorY.setTextColor(getResources().getColor(android.R.color.black));
+            sensorX.setTextColor(getResources().getColor(android.R.color.black));
+            sensorZ.setTextColor(getResources().getColor(android.R.color.black));
             //mClockView.setVisibility(View.GONE);
         }
     }
@@ -128,15 +130,33 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     }
 
+    long lastSendRosationData = 0;
+    long lastSendAccData = 0;
+
     @Override
     public void onSensorChanged(SensorEvent event) {
+        long millis = System.currentTimeMillis();
+        int seconds = (int) (millis / 1000);
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+
         float[] v = event.values;
         if (event.sensor == gameRotationSensor) {
-            sensorZ.setText(String.format("%.3f,%.3f,%.3f", v[0], v[1], v[2]));
-            sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
+            sensorX.setText(String.format("%.3f", v[0]));
+            sensorY.setText(String.format("%.3f", v[1]));
+            sensorZ.setText(String.format("%.3f", v[2]));
+            if (millis - lastSendRosationData > 500){
+                sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
+                lastSendRosationData = millis;
+            }
+
             //Log.d("SendData", String.valueOf(vx[0]));
         } else if (event.sensor == linearAccSensor) {
-            sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
+            if (millis - lastSendAccData > 500){
+                sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
+                lastSendAccData = millis;
+            }
+
             //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
         }
     }

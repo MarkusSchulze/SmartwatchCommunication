@@ -138,6 +138,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
                         lastData[2] = dataMapItem.getDataMap().getFloat("z");
+                        Log.d("TYPE", lastDataType);
                         Log.d("x", String.valueOf(lastData[0]));
                         Log.d("y", String.valueOf(lastData[1]));
                         Log.d("z", String.valueOf(lastData[2]));
