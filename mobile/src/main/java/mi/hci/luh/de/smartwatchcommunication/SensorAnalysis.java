@@ -5,17 +5,20 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.drawable.BitmapDrawable;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -24,15 +27,13 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.sql.Timestamp;
-import java.util.List;
-
-import static android.content.Context.SENSOR_SERVICE;
+import java.util.Timer;
 
 /**
  * Created by Vincent on 15.12.16.
  */
 
-public class SensorAnalysis extends Activity{
+public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private Canvas canvas;
     private Paint paint;
     private Button BigB;
@@ -48,54 +49,107 @@ public class SensorAnalysis extends Activity{
     private String lastDataType;
     private final Float[] lastData = new Float[3];
     private GoogleApiClient mGoogleApiClient;
-
-    public SensorAnalysis() {
-        mGoogleApiClient = null;
-    }
+    long starttime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_draw);
 
+        //Timer starten
+        startTime = System.currentTimeMillis();
+        timerHandler.postDelayed(timerRunnable, 0);
+
+        //Zeichnen
         paint = new Paint();
         paint.setColor(Color.parseColor("#CD5C5C"));
         bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bg);
-        mGoogleApiClient = MainActivity.getAPI();
 
         LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
-        ll.setBackgroundDrawable(new BitmapDrawable(bg));
+        //ll.setBackgroundDrawable(new BitmapDrawable(bg));
+
+        // Init Google Service API
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(AppIndex.API).build();
+        mGoogleApiClient.connect();
 
         //vorläufiger Button zur Aktualisierung der Empfangsdaten
         txt_output = (TextView) findViewById(R.id.output);
+        txt_output.setText("Test123");
         showData = (Button) findViewById(R.id.refresh);
         showData.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
-                results.setResultCallback(new ResultCallback<DataItemBuffer>() {
-                    @Override
-                    public void onResult(DataItemBuffer dataItems) {
-                        if (dataItems.getCount() != 0) {
-                            DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
-
-                            // This should read the correct value.
-                            float value = dataMapItem.getDataMap().getFloat("x");
-                            Log.d("receiveDataMain", String.valueOf(value));
-                            txt_output.setText(String.valueOf(value));
-
-                            lastDataType = dataMapItem.getDataMap().getString("TYPE");
-                            lastData[0] = dataMapItem.getDataMap().getFloat("x");
-                            lastData[1] = dataMapItem.getDataMap().getFloat("y");
-                            lastData[2] = dataMapItem.getDataMap().getFloat("z");
-                        }
-
-                        dataItems.release();
-                    }
-                });
+                txt_output.setText(String.valueOf(MyService.getData()));
+//                PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+//                results.setResultCallback(new ResultCallback<DataItemBuffer>() {
+//                    @Override
+//                    public void onResult(DataItemBuffer dataItems) {
+//                        if (dataItems.getCount() != 0) {
+//                            DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
+//
+//                            // This should read the correct value.
+//                            float value = dataMapItem.getDataMap().getFloat("x");
+//                            Log.d("receiveDataMain", String.valueOf(value));
+//                            txt_output.setText(String.valueOf(value));
+//
+//                            lastDataType = dataMapItem.getDataMap().getString("TYPE");
+//                            lastData[0] = dataMapItem.getDataMap().getFloat("x");
+//                            lastData[1] = dataMapItem.getDataMap().getFloat("y");
+//                            lastData[2] = dataMapItem.getDataMap().getFloat("z");
+//                        }
+//
+//                        dataItems.release();
+//                    }
+//                });
             }
         });
     }
+
+    long startTime = 0;
+    Handler timerHandler = new Handler();
+    Runnable timerRunnable = new Runnable() {
+
+        @Override
+        public void run() {
+            long millis = System.currentTimeMillis() - startTime;
+            int seconds = (int) (millis / 1000);
+            int minutes = seconds / 60;
+            seconds = seconds % 60;
+
+            //txt_output.setText(String.format("%d:%02d", minutes, seconds));
+
+            PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+            results.setResultCallback(new ResultCallback<DataItemBuffer>() {
+                @Override
+                public void onResult(DataItemBuffer dataItems) {
+                    if (dataItems.getCount() != 0) {
+                        DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
+
+                        // This should read the correct value.
+                        float value = dataMapItem.getDataMap().getFloat("x");
+                        //Log.d("receiveDataMain", String.valueOf(value));
+                        txt_output.setText(String.valueOf(value));
+
+                        lastDataType = dataMapItem.getDataMap().getString("TYPE");
+                        lastData[0] = dataMapItem.getDataMap().getFloat("x");
+                        lastData[1] = dataMapItem.getDataMap().getFloat("y");
+                        lastData[2] = dataMapItem.getDataMap().getFloat("z");
+                        Log.d("x", String.valueOf(lastData[0]));
+                        Log.d("y", String.valueOf(lastData[1]));
+                        Log.d("z", String.valueOf(lastData[2]));
+                    }
+
+                    dataItems.release();
+                }
+            });
+
+            timerHandler.postDelayed(this, 500);
+        }
+    };
 
     public void ClickButton(){
 
@@ -229,6 +283,27 @@ public class SensorAnalysis extends Activity{
         distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
         distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
 
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        timerHandler.removeCallbacks(timerRunnable);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
     }
 }

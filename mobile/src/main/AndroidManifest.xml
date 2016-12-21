@@ -18,6 +18,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".SensorAnalysis"> </activity>
+
         <service
             android:name=".MyService"
             android:enabled="true"
