@@ -1,5 +1,6 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
+import android.annotation.SuppressLint;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -9,33 +10,19 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
-import android.util.Log;
-import android.view.View;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.common.api.ResultCallback;
-import com.google.android.gms.wearable.DataItemBuffer;
-import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
 public class MainActivity extends WearableActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, SensorEventListener {
 
     private BoxInsetLayout mContainerView;
-    private TextView mTextView;
-    //private TextView mClockView;
     private TextView sensorX, sensorY, sensorZ;
 
-    private SensorManager sensorManager;
     private Sensor gameRotationSensor, linearAccSensor;
 
     private GoogleApiClient mGoogleApiClient;
@@ -48,7 +35,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
 
-        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
 
         gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
         sensorManager.registerListener(this, gameRotationSensor, 100 * 1000);
@@ -86,6 +73,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         super.onExitAmbient();
     }
 
+    @SuppressWarnings("deprecation")
     private void updateDisplay() {
         if (isAmbient()) {
             mContainerView.setBackgroundColor(getResources().getColor(android.R.color.black));
@@ -133,12 +121,13 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     long lastSendRosationData = 0;
     long lastSendAccData = 0;
 
+    @SuppressLint("DefaultLocale")
     @Override
     public void onSensorChanged(SensorEvent event) {
         long millis = System.currentTimeMillis();
-        int seconds = (int) (millis / 1000);
-        int minutes = seconds / 60;
-        seconds = seconds % 60;
+        //int seconds = (int) (millis / 1000);
+        //int minutes = seconds / 60;
+        //seconds = seconds % 60;
 
         float[] v = event.values;
         if (event.sensor == gameRotationSensor) {
@@ -149,15 +138,11 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
                 lastSendRosationData = millis;
             }
-
-            //Log.d("SendData", String.valueOf(vx[0]));
         } else if (event.sensor == linearAccSensor) {
             if (millis - lastSendAccData > 500){
                 sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
                 lastSendAccData = millis;
             }
-
-            //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
         }
     }
 

@@ -1,13 +1,11 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
-import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
@@ -27,29 +25,26 @@ import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.sql.Timestamp;
-import java.util.Timer;
 
 /**
  * Created by Vincent on 15.12.16.
+ * Updated by Markus on 31.12.16
  */
 
 public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private Canvas canvas;
     private Paint paint;
-    private Button BigB;
     private int clickCount = 0;
-    private float currentX, currentY, topY, bottomY, leftX, rightX, middleX, middleY;
+    private float currentX, currentY, topY, bottomY, leftX, rightX;
     private float accX, accY;
     private double distX, distY;
     private boolean calibrated;
     private Timestamp lastLinAccTime;
-    private static TextView txt_output;
-    private Button showData;
+    private TextView txt_output;
     private Bitmap bg;
     private String lastDataType;
     private final Float[] lastData = new Float[3];
     private GoogleApiClient mGoogleApiClient;
-    long starttime = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +61,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
         canvas = new Canvas(bg);
 
-        LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
+        //LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
         //ll.setBackgroundDrawable(new BitmapDrawable(bg));
 
         // Init Google Service API
@@ -79,32 +74,12 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
         //vorläufiger Button zur Aktualisierung der Empfangsdaten
         txt_output = (TextView) findViewById(R.id.output);
-        txt_output.setText("Test123");
-        showData = (Button) findViewById(R.id.refresh);
+        //txt_output.setText("Test123");
+        Button showData = (Button) findViewById(R.id.refresh);
         showData.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 txt_output.setText(String.valueOf(MyService.getData()));
-//                PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
-//                results.setResultCallback(new ResultCallback<DataItemBuffer>() {
-//                    @Override
-//                    public void onResult(DataItemBuffer dataItems) {
-//                        if (dataItems.getCount() != 0) {
-//                            DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
-//
-//                            // This should read the correct value.
-//                            float value = dataMapItem.getDataMap().getFloat("x");
-//                            Log.d("receiveDataMain", String.valueOf(value));
-//                            txt_output.setText(String.valueOf(value));
-//
-//                            lastDataType = dataMapItem.getDataMap().getString("TYPE");
-//                            lastData[0] = dataMapItem.getDataMap().getFloat("x");
-//                            lastData[1] = dataMapItem.getDataMap().getFloat("y");
-//                            lastData[2] = dataMapItem.getDataMap().getFloat("z");
-//                        }
-//
-//                        dataItems.release();
-//                    }
-//                });
+                ClickButton();
             }
         });
     }
@@ -115,23 +90,18 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
         @Override
         public void run() {
-            long millis = System.currentTimeMillis() - startTime;
-            int seconds = (int) (millis / 1000);
-            int minutes = seconds / 60;
-            seconds = seconds % 60;
 
             //txt_output.setText(String.format("%d:%02d", minutes, seconds));
 
             PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
             results.setResultCallback(new ResultCallback<DataItemBuffer>() {
                 @Override
-                public void onResult(DataItemBuffer dataItems) {
+                public void onResult(@NonNull DataItemBuffer dataItems) {
                     if (dataItems.getCount() != 0) {
                         DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
 
                         // This should read the correct value.
                         float value = dataMapItem.getDataMap().getFloat("x");
-                        //Log.d("receiveDataMain", String.valueOf(value));
                         txt_output.setText(String.valueOf(value));
 
                         lastDataType = dataMapItem.getDataMap().getString("TYPE");
@@ -182,7 +152,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         clickCount++;
     }
     public void drawSensorData() {
-        if (lastDataType == "LINEAR_ACC") {
+        if (lastDataType.contentEquals("LINEAR_ACC")) {
             Float[] v = lastData;
             Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
 
@@ -192,7 +162,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             Log.d("distY", String.format("distY: %f", distY));
 
         }
-        if (lastDataType == "GAME_ROTATION") {
+        if (lastDataType.contentEquals("GAME_ROTATION")) {
             Float[] vx = lastData;
             //Log.d("Game", String.format("%.3f, %.3f, %.3f", vx[0], vx[1], vx[2]));
             currentX = (-1) * vx[2];
@@ -202,7 +172,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             double x, y;
 
             if (this.calibrated) {
-                double[] coordinates = null;
+                double[] coordinates;
                 coordinates = this.calibrateCoordinates(currentX, currentY);
 
                 x = coordinates[0];
@@ -214,7 +184,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
             }
 
-            int pixel[] = null;
+            int pixel[];
             pixel = this.mapCoordinatesToDisplay(x, y, w, h);
 
             canvas.drawRect(pixel[1], pixel[0], pixel[1] + 10, pixel[0] + 10, paint);
@@ -223,7 +193,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     }
     public double[] calibrateCoordinates(double x_in, double y_in) {
 
-        double[] coordinates = null;
+        double[] coordinates = new double[2];
 
         if (this.calibrated) {
             float mid_x = (rightX + leftX) / 2;
@@ -238,7 +208,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
     }
     public int[] mapCoordinatesToDisplay(double x_in, double y_in, int w, int h) {
-        int[] coordinates = null;
+        int[] coordinates = new int[2];
 
         int point_x = (int) (x_in * w / 2 + w / 2);
         int point_y = (int) (y_in * h / 2 + h / 2);
