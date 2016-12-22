@@ -10,6 +10,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -22,6 +24,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     private BoxInsetLayout mContainerView;
     private TextView sensorX, sensorY, sensorZ;
+    private Button setMiddle;
 
     private Sensor gameRotationSensor, linearAccSensor;
 
@@ -36,16 +39,22 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
 
         SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-
         gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
         sensorManager.registerListener(this, gameRotationSensor, 100 * 1000);
-
         linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
         sensorManager.registerListener(this, linearAccSensor, 100 * 1000);
 
         sensorX = (TextView) findViewById(R.id.sensor_X);
         sensorY = (TextView) findViewById(R.id.sensor_Y);
         sensorZ = (TextView) findViewById(R.id.sensor_Z);
+
+        setMiddle = (Button) findViewById(R.id.BigButton);
+        setMiddle.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                //setMiddle.setText(String.valueOf(MyService.getData()));
+                //ClickButton();
+            }
+        });
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addApi(Wearable.API)
@@ -80,15 +89,11 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             sensorY.setTextColor(getResources().getColor(android.R.color.white));
             sensorX.setTextColor(getResources().getColor(android.R.color.white));
             sensorZ.setTextColor(getResources().getColor(android.R.color.white));
-            //mClockView.setVisibility(View.VISIBLE);
-
-            //mClockView.setText(AMBIENT_DATE_FORMAT.format(new Date()));
         } else {
             mContainerView.setBackground(null);
             sensorY.setTextColor(getResources().getColor(android.R.color.black));
             sensorX.setTextColor(getResources().getColor(android.R.color.black));
             sensorZ.setTextColor(getResources().getColor(android.R.color.black));
-            //mClockView.setVisibility(View.GONE);
         }
     }
 
@@ -134,12 +139,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             sensorX.setText(String.format("%.3f", v[0]));
             sensorY.setText(String.format("%.3f", v[1]));
             sensorZ.setText(String.format("%.3f", v[2]));
-            if (millis - lastSendRosationData > 50){
+            if (millis - lastSendRosationData > 100){
                 sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
                 lastSendRosationData = millis;
             }
         } else if (event.sensor == linearAccSensor) {
-            if (millis - lastSendAccData > 50){
+            if (millis - lastSendAccData > 100){
                 sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
                 lastSendAccData = millis;
             }

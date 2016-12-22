@@ -40,7 +40,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private boolean calibrated;
     private Timestamp lastLinAccTime;
     private TextView txt_output;
-    private Bitmap bg;
     private String lastDataType;
     private final Float[] lastData = new Float[3];
     private GoogleApiClient mGoogleApiClient;
@@ -167,14 +166,13 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         if (lastDataType.contentEquals("GAME_ROTATION")) {
             Float[] vx = lastData;
 
-            currentY = (-1) * vx[2];
-            currentX =  vx[1];
-//            int w = bg.getWidth();
-//            int h = bg.getHeight();
-            int w = cursorView.getWidth();
-            int h = cursorView.getHeight();
+            currentY =  vx[2];
+            currentX = (-1) * vx[1];
+            int width = cursorView.getWidth();
+            int height = cursorView.getHeight();
 
-            int point_x, point_y = 0;
+            int point_x;
+            int point_y;
 
             if (this.calibrated) {
                 float mid_x_rot = (rightX + leftX) / 2;
@@ -192,22 +190,22 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 double x = 0.5 * x_rot + 0.5 * x_dist;
                 double y = 0.5 * y_rot + 0.5 * y_dist;
 
-                point_x = (int) (x_rot * w / 2 + w / 2);
-                point_y = (int) (y_rot * h / 2 + h / 2);
+                point_x = (int) (x_rot * width / 2 + width / 2);
+                point_y = (int) (y_rot * height / 2 + height / 2);
             } else {
-                point_x = (int) (currentX * h / 2) + h / 2;
-                point_y = (int) (currentY * w / 2) + w / 2;
+                point_x = (int) (currentX * height ) + height / 2;
+                point_y = (int) (currentY * width ) + width / 2;
             }
 
-
-            if (point_x > h) {
-                point_x = h;
+            //Cursor bleibt im Bild auch wenn man außerhalb zeigt
+            if (point_x > height) {
+                point_x = height;
             }
             if (point_x < 0) {
                 point_x = 0;
             }
-            if (point_y > w) {
-                point_y = w;
+            if (point_y > width) {
+                point_y = width;
             }
             if (point_y < 0) {
                 point_y = 0;
