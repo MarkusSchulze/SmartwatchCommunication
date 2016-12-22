@@ -134,12 +134,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             sensorX.setText(String.format("%.3f", v[0]));
             sensorY.setText(String.format("%.3f", v[1]));
             sensorZ.setText(String.format("%.3f", v[2]));
-            if (millis - lastSendRosationData > 500){
+            if (millis - lastSendRosationData > 50){
                 sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
                 lastSendRosationData = millis;
             }
         } else if (event.sensor == linearAccSensor) {
-            if (millis - lastSendAccData > 500){
+            if (millis - lastSendAccData > 50){
                 sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
                 lastSendAccData = millis;
             }

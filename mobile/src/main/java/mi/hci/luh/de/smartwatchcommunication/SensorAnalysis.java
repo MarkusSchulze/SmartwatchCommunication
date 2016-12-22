@@ -35,9 +35,8 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private Canvas canvas;
     private Paint paint;
     private int clickCount = 0;
-    private float currentX, currentY, topY, bottomY, leftX, rightX;
+    private float currentX, currentY, topY, bottomY, leftX, rightX, middleX, middleY;
     private float accX, accY;
-    private double distX, distY;
     private boolean calibrated;
     private Timestamp lastLinAccTime;
     private TextView txt_output;
@@ -45,6 +44,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private String lastDataType;
     private final Float[] lastData = new Float[3];
     private GoogleApiClient mGoogleApiClient;
+    private CursorView cursorView;
+    private Button showData;
+    private double distX, distY, distX_right, distX_left, distY_top, distY_bottom;
+    private boolean cursorEnabled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,13 +59,17 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         timerHandler.postDelayed(timerRunnable, 0);
 
         //Zeichnen
-        paint = new Paint();
-        paint.setColor(Color.parseColor("#CD5C5C"));
-        bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
-        canvas = new Canvas(bg);
+//        paint = new Paint();
+//        paint.setColor(Color.parseColor("#CD5C5C"));
+//        bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
+//        canvas = new Canvas(bg);
 
         //LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
         //ll.setBackgroundDrawable(new BitmapDrawable(bg));
+
+        LinearLayout rect  = (LinearLayout) findViewById(R.id.rect);
+        cursorView = new CursorView(this);
+        rect.addView(cursorView);
 
         // Init Google Service API
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -75,7 +82,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         //vorläufiger Button zur Aktualisierung der Empfangsdaten
         txt_output = (TextView) findViewById(R.id.output);
         //txt_output.setText("Test123");
-        Button showData = (Button) findViewById(R.id.refresh);
+        showData = (Button) findViewById(R.id.refresh);
         showData.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 txt_output.setText(String.valueOf(MyService.getData()));
@@ -87,7 +94,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     long startTime = 0;
     Handler timerHandler = new Handler();
     Runnable timerRunnable = new Runnable() {
-
         @Override
         public void run() {
 
@@ -112,38 +118,162 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         Log.d("x", String.valueOf(lastData[0]));
                         Log.d("y", String.valueOf(lastData[1]));
                         Log.d("z", String.valueOf(lastData[2]));
+                        SensorDataChanged();
                     }
 
                     dataItems.release();
                 }
             });
 
-            timerHandler.postDelayed(this, 500);
+            timerHandler.postDelayed(this, 50);
         }
     };
 
-    public void ClickButton(){
+    public void SensorDataChanged() {
+        if (lastDataType.contentEquals("LINEAR_ACC")) {
+            Float[] v = lastData;
+            //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
 
-        switch(clickCount) {
+            float accX_old = accX;
+            float accY_old = accY;
+
+            // Filter Acceleration
+            double threshold = 0.05;
+            accY = ((v[1] < threshold) && (!(v[1] < -threshold))) ? 0 : v[1];
+            accX = ((v[2] < threshold) && (!(v[2] < -threshold))) ? 0 : v[2];
+            accY = (-1) * accY;
+            //Log.d("Acceleration", String.format("accX: %f", v[1]));
+            //Log.d("Acceleration", String.format("accY: %f", v[2]));
+
+
+            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+            //Log.d("currentTime", String.format("CurrentTime: %d", currentTime.getTime()));
+
+            if (lastLinAccTime == null) {
+                lastLinAccTime = currentTime;
+            }
+            double deltaTime = (currentTime.getTime() - lastLinAccTime.getTime());
+
+            double deltaTime_square = Math.pow(deltaTime, 2.0) / 100000;
+
+            distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
+            distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
+
+            lastLinAccTime = currentTime;
+            //Log.d("deltaTime", String.format("DeltaTime: %d", deltaTime));
+            Log.d("distX", String.format("distX: %f", distX));
+            Log.d("distY", String.format("distY: %f", distY));
+        }
+        if (lastDataType.contentEquals("GAME_ROTATION")) {
+            Float[] vx = lastData;
+
+            currentY = (-1) * vx[2];
+            currentX =  vx[1];
+//            int w = bg.getWidth();
+//            int h = bg.getHeight();
+            int w = cursorView.getWidth();
+            int h = cursorView.getHeight();
+
+            int point_x, point_y = 0;
+
+            if (this.calibrated) {
+                float mid_x_rot = (rightX + leftX) / 2;
+                float mid_y_rot = (topY + bottomY) / 2;
+
+                double mid_x_acc = (this.distX_right + this.distX_left) / 2;
+                double mid_y_acc = (this.distY_top + this.distY_bottom) / 2;
+
+                float x_rot = (currentX - mid_x_rot) / ((rightX - leftX) / 2);
+                float y_rot = (currentY - mid_y_rot) / ((topY - bottomY) / 2);
+
+                double x_dist = (distX - mid_x_acc) / ((distX_right - distX_left) / 2);
+                double y_dist = (distY - mid_y_acc) / ((distY_top - distY_bottom) / 2);
+
+                double x = 0.5 * x_rot + 0.5 * x_dist;
+                double y = 0.5 * y_rot + 0.5 * y_dist;
+
+                point_x = (int) (x_rot * w / 2 + w / 2);
+                point_y = (int) (y_rot * h / 2 + h / 2);
+            } else {
+                point_x = (int) (currentX * h / 2) + h / 2;
+                point_y = (int) (currentY * w / 2) + w / 2;
+            }
+
+
+            if (point_x > h) {
+                point_x = h;
+            }
+            if (point_x < 0) {
+                point_x = 0;
+            }
+            if (point_y > w) {
+                point_y = w;
+            }
+            if (point_y < 0) {
+                point_y = 0;
+            }
+//            canvas.drawRect(point_y, point_x, point_y + 10, point_x + 10, paint)
+            cursorView.setCursor(point_y, point_x);
+            cursorView.invalidate();
+//            LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
+//            ll.setBackgroundDrawable(new BitmapDrawable(bg));
+
+        }
+    }
+
+    public void ClickButton() {
+        if(cursorEnabled != true) {
+            cursorEnabled = true;
+            middleX = currentX;
+            middleY = currentY;
+        }
+        else {
+            cursorEnabled = false;
+        }
+        switch (clickCount) {
             case 0:
-                this.topY =  currentY;
-                Log.d("Calibration", String.format("topY: %f", this.topY));
+                Log.d("Calibration", "Start Calibration");
+                showData.setText("Choose Top");
                 break;
             case 1:
-                this.bottomY = currentY;
-                Log.d("Calibration", String.format("bottomY: %f", this.bottomY));
+                topY = currentY;
+                distY_top = distY;
+                Log.d("Calibration", String.format("topY: %f", topY));
+                Log.d("Calibration", String.format("topY dist: %f", distY));
+                showData.setText("Choose Bottom");
+
+
                 break;
             case 2:
-                this.rightX = currentX;
-                Log.d("Calibration", String.format("rightX: %f", this.rightX));
+                bottomY = currentY;
+                distY_bottom = distY;
+                Log.d("Calibration", String.format("bottomY: %f", bottomY));
+                Log.d("Calibration", String.format("bottomY dist: %f", distY));
+                showData.setText("Choose Right");
+
+
                 break;
             case 3:
-                this.leftX = currentX;
-                Log.d("Calibration", String.format("leftX: %f", this.leftX));
+                rightX = currentX;
+                distX_right = distX;
+                Log.d("Calibration", String.format("rightX: %f", rightX));
+                Log.d("Calibration", String.format("rightX dist: %f", distX));
+                showData.setText("Choose Left");
+
+
                 break;
             case 4:
-                this.calibrated = true;
+                leftX = currentX;
+                distX_left = distX;
+                Log.d("Calibration", String.format("leftX: %f", leftX));
+                Log.d("Calibration", String.format("leftX dist: %f", distX));
+                showData.setText("Finish");
+
+                break;
+            case 5:
+                calibrated = true;
                 Log.d("Calibration", "Calibration completed");
+                showData.setText("Completed");
                 break;
             default:
                 break;
@@ -151,111 +281,112 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         }
         clickCount++;
     }
-    public void drawSensorData() {
-        if (lastDataType.contentEquals("LINEAR_ACC")) {
-            Float[] v = lastData;
-            Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
 
-            this.accToPath(v);
-
-            Log.d("distX", String.format("distX: %f", distX));
-            Log.d("distY", String.format("distY: %f", distY));
-
-        }
-        if (lastDataType.contentEquals("GAME_ROTATION")) {
-            Float[] vx = lastData;
-            //Log.d("Game", String.format("%.3f, %.3f, %.3f", vx[0], vx[1], vx[2]));
-            currentX = (-1) * vx[2];
-            currentY = (-1) * vx[1];
-            int w = bg.getWidth();
-            int h = bg.getHeight();
-            double x, y;
-
-            if (this.calibrated) {
-                double[] coordinates;
-                coordinates = this.calibrateCoordinates(currentX, currentY);
-
-                x = coordinates[0];
-                y = coordinates[1];
-
-            } else {
-                x = currentX;
-                y = currentY;
-
-            }
-
-            int pixel[];
-            pixel = this.mapCoordinatesToDisplay(x, y, w, h);
-
-            canvas.drawRect(pixel[1], pixel[0], pixel[1] + 10, pixel[0] + 10, paint);
-
-        }
-    }
-    public double[] calibrateCoordinates(double x_in, double y_in) {
-
-        double[] coordinates = new double[2];
-
-        if (this.calibrated) {
-            float mid_x = (rightX + leftX) / 2;
-            float mid_y = (topY + bottomY) / 2;
-
-            coordinates[0] = (currentX - mid_x) / ((rightX - leftX) / 2);
-            coordinates[1] = (currentY - mid_y) / ((topY - bottomY) / 2);
-
-        }
-
-        return coordinates;
-
-    }
-    public int[] mapCoordinatesToDisplay(double x_in, double y_in, int w, int h) {
-        int[] coordinates = new int[2];
-
-        int point_x = (int) (x_in * w / 2 + w / 2);
-        int point_y = (int) (y_in * h / 2 + h / 2);
-
-        if (point_x > h) {
-            point_x = h;
-        }
-        if (point_x < 0) {
-            point_x = 0;
-        }
-        if (point_y > w) {
-            point_y = w;
-        }
-        if (point_y < 0) {
-            point_y = 0;
-        }
-
-        coordinates[0] = point_x;
-        coordinates[1] = point_y;
-        return coordinates;
-    }
-
-    public void accToPath(Float[] v) {
-
-        float accX_old = accX;
-        float accY_old = accY;
-
-        // Filter Acceleration
-        double threshold = 0.2;
-        accX = ((v[1] < threshold) && (!(v[1] < -threshold))) ? 0 : v[1];
-        accY = ((v[2] < threshold) && (!(v[2] < -threshold))) ? 0 : v[2];
-
-        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-        Log.d("currentTime", String.format("CurrentTime: %d", currentTime.getTime()));
-
-        if (lastLinAccTime == null) {
-            lastLinAccTime = currentTime;
-        }
-        double deltaTime = (currentTime.getTime() - lastLinAccTime.getTime());
-
-        double deltaTime_square = Math.pow(deltaTime, 2.0) / 100000;
-
-        distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
-        distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
-
-
-    }
+//    public void drawSensorData() {
+//        if (lastDataType.contentEquals("LINEAR_ACC")) {
+//            Float[] v = lastData;
+//            Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
+//
+//            accToPath(v);
+//
+//            Log.d("distX", String.format("distX: %f", distX));
+//            Log.d("distY", String.format("distY: %f", distY));
+//
+//        }
+//        if (lastDataType.contentEquals("GAME_ROTATION")) {
+//            Float[] vx = lastData;
+//            //Log.d("Game", String.format("%.3f, %.3f, %.3f", vx[0], vx[1], vx[2]));
+//            currentX = (-1) * vx[2];
+//            currentY = (-1) * vx[1];
+//            int w = bg.getWidth();
+//            int h = bg.getHeight();
+//            double x, y;
+//
+//            if (calibrated) {
+//                double[] coordinates;
+//                coordinates = calibrateCoordinates(currentX, currentY);
+//
+//                x = coordinates[0];
+//                y = coordinates[1];
+//
+//            } else {
+//                x = currentX;
+//                y = currentY;
+//
+//            }
+//
+//            int pixel[];
+//            pixel = mapCoordinatesToDisplay(x, y, w, h);
+//
+//            canvas.drawRect(pixel[1], pixel[0], pixel[1] + 10, pixel[0] + 10, paint);
+//
+//        }
+//    }
+//    public double[] calibrateCoordinates(double x_in, double y_in) {
+//
+//        double[] coordinates = new double[2];
+//
+//        if (calibrated) {
+//            float mid_x = (rightX + leftX) / 2;
+//            float mid_y = (topY + bottomY) / 2;
+//
+//            coordinates[0] = (currentX - mid_x) / ((rightX - leftX) / 2);
+//            coordinates[1] = (currentY - mid_y) / ((topY - bottomY) / 2);
+//
+//        }
+//
+//        return coordinates;
+//
+//    }
+//    public int[] mapCoordinatesToDisplay(double x_in, double y_in, int w, int h) {
+//        int[] coordinates = new int[2];
+//
+//        int point_x = (int) (x_in * w / 2 + w / 2);
+//        int point_y = (int) (y_in * h / 2 + h / 2);
+//
+//        if (point_x > h) {
+//            point_x = h;
+//        }
+//        if (point_x < 0) {
+//            point_x = 0;
+//        }
+//        if (point_y > w) {
+//            point_y = w;
+//        }
+//        if (point_y < 0) {
+//            point_y = 0;
+//        }
+//
+//        coordinates[0] = point_x;
+//        coordinates[1] = point_y;
+//        return coordinates;
+//    }
+//
+//    public void accToPath(Float[] v) {
+//
+//        float accX_old = accX;
+//        float accY_old = accY;
+//
+//        // Filter Acceleration
+//        double threshold = 0.2;
+//        accX = ((v[1] < threshold) && (!(v[1] < -threshold))) ? 0 : v[1];
+//        accY = ((v[2] < threshold) && (!(v[2] < -threshold))) ? 0 : v[2];
+//
+//        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+//        Log.d("currentTime", String.format("CurrentTime: %d", currentTime.getTime()));
+//
+//        if (lastLinAccTime == null) {
+//            lastLinAccTime = currentTime;
+//        }
+//        double deltaTime = (currentTime.getTime() - lastLinAccTime.getTime());
+//
+//        double deltaTime_square = Math.pow(deltaTime, 2.0) / 100000;
+//
+//        distX = 0.5 * deltaTime_square * accX + deltaTime_square * accX_old + distX;
+//        distY = 0.5 * deltaTime_square * accY + deltaTime_square * accY_old + distY;
+//
+//
+//    }
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
