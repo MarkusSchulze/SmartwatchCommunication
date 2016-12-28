@@ -42,6 +42,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private TextView txt_output;
     private String lastDataType;
     private final Float[] lastData = new Float[3];
+    private final Float[] calibration = new Float[3];
     private GoogleApiClient mGoogleApiClient;
     private CursorView cursorView;
     private Button showData;
@@ -113,11 +114,19 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
                         lastData[2] = dataMapItem.getDataMap().getFloat("z");
+                        // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
+                        // des Sensors zum Startwert des Cursors
+                        if (lastDataType.contentEquals("RESET")){
+                            calibration[0] = lastData[0];
+                            calibration[1] = lastData[1];
+                            calibration[2] = lastData[2];
+                        }else{
+                            SensorDataChanged();
+                        }
                         Log.d("TYPE", lastDataType);
                         Log.d("x", String.valueOf(lastData[0]));
                         Log.d("y", String.valueOf(lastData[1]));
                         Log.d("z", String.valueOf(lastData[2]));
-                        SensorDataChanged();
                     }
 
                     dataItems.release();
@@ -197,19 +206,24 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 point_y = (int) (currentY * width ) + width / 2;
             }
 
+
+
+
             //Cursor bleibt im Bild auch wenn man außerhalb zeigt
             if (point_x > height) {
                 point_x = height;
             }
-            if (point_x < 0) {
-                point_x = 0;
+            if (point_x < 1) {
+                point_x = 1;
             }
             if (point_y > width) {
                 point_y = width;
             }
-            if (point_y < 0) {
-                point_y = 0;
+            if (point_y < 1) {
+                point_y = 1;
             }
+
+
 //            canvas.drawRect(point_y, point_x, point_y + 10, point_x + 10, paint)
             cursorView.setCursor(point_y, point_x);
             cursorView.invalidate();

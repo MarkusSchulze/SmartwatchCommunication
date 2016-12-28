@@ -25,6 +25,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     private BoxInsetLayout mContainerView;
     private TextView sensorX, sensorY, sensorZ;
     private Button setMiddle;
+    private boolean reset = false;
 
     private Sensor gameRotationSensor, linearAccSensor;
 
@@ -38,7 +39,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
 
-        SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        final SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
         sensorManager.registerListener(this, gameRotationSensor, 100 * 1000);
         linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
@@ -51,8 +52,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         setMiddle = (Button) findViewById(R.id.BigButton);
         setMiddle.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                //setMiddle.setText(String.valueOf(MyService.getData()));
-                //ClickButton();
+                reset = true;
             }
         });
 
@@ -99,7 +99,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     public void sendSensorData(String type, float x, float y, float z) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
-        putDataMapRequest.getDataMap().putString("TYPE", type);
+        if (reset){
+            putDataMapRequest.getDataMap().putString("TYPE", "RESET");
+            reset = false;
+        }else{
+            putDataMapRequest.getDataMap().putString("TYPE", type);
+        }
         putDataMapRequest.getDataMap().putFloat("x", x);
         putDataMapRequest.getDataMap().putFloat("y", y);
         putDataMapRequest.getDataMap().putFloat("z", z);
