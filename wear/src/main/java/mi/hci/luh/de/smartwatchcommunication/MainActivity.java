@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -20,15 +21,17 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.List;
+
 public class MainActivity extends WearableActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, SensorEventListener {
 
+    long lastSendRotationData = 0;
+    long lastSendAccData = 0;
     private BoxInsetLayout mContainerView;
     private TextView sensorX, sensorY, sensorZ;
     private Button setMiddle;
     private boolean reset = false;
-
-    private Sensor gameRotationSensor, linearAccSensor;
-
+    private Sensor gameRotationSensor, linearAccSensor, gynoscopeSensor, rotationSensor, geoSensor, gravitySensor;
     private GoogleApiClient mGoogleApiClient;
 
     @Override
@@ -40,10 +43,23 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
 
         final SensorManager sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
-        sensorManager.registerListener(this, gameRotationSensor, 100 * 1000);
-        linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        final List<Sensor> deviceSensors = sensorManager.getSensorList(Sensor.TYPE_ALL);
+        for (Sensor type : deviceSensors) {
+            Log.e("sensors", type.getStringType());
+        }
+        gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR); //works
+        sensorManager.registerListener(this, gameRotationSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION); //works
         sensorManager.registerListener(this, linearAccSensor, 100 * 1000);
+        gynoscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE); //works
+        sensorManager.registerListener(this, gynoscopeSensor, 100 * 1000);
+        rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+        sensorManager.registerListener(this, rotationSensor, 100 * 1000);
+        geoSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR);
+        sensorManager.registerListener(this, geoSensor, 100 * 1000);
+        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
+        sensorManager.registerListener(this, gravitySensor, 100 * 1000);
+
 
         sensorX = (TextView) findViewById(R.id.sensor_X);
         sensorY = (TextView) findViewById(R.id.sensor_Y);
@@ -99,10 +115,10 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     public void sendSensorData(String type, float x, float y, float z) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
-        if (reset){
+        if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
             reset = false;
-        }else{
+        } else {
             putDataMapRequest.getDataMap().putString("TYPE", type);
         }
         putDataMapRequest.getDataMap().putFloat("x", x);
@@ -128,9 +144,6 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     }
 
-    long lastSendRosationData = 0;
-    long lastSendAccData = 0;
-
     @SuppressLint("DefaultLocale")
     @Override
     public void onSensorChanged(SensorEvent event) {
@@ -141,19 +154,90 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
         float[] v = event.values;
         if (event.sensor == gameRotationSensor) {
-            sensorX.setText(String.format("%.3f", v[0]));
-            sensorY.setText(String.format("%.3f", v[1]));
+            // Umrechnung der Sensordaten in brauchbare Werte
+            // Werte gegen 1 geben ein schlechteres Sensorverhalten, deswegen der Welchsel zwischen den beiden SensorAchsen
+            // Normierung von Werten zwischen -1 und 1 auf 0 bis 2
+            // Dritter Versuch
+            double grad = 0;
+            double x1 = 0;
+            double x2 = 0;
+            if (v[2] > 0 && v[3] > 0) {
+                x1 = 1 - v[2];
+                x2 = v[3];
+            } else if (v[2] < 0 && v[3] > 0) {
+                x1 = -v[2] + 1;
+                x2 = (1 - v[3]) + 1;
+            } else if (v[2] < 0 && v[3] < 0) {
+                x1 = v[2] + 1;
+                x2 = -v[3];
+            } else if (v[2] > 0 && v[3] < 0) {
+                x1 = v[2] + 1;
+                x2 = v[3] + 2;
+            }
+            grad = (x1 + x2) / 2;
+
+            // Erster Versuch
+//            double grad = 0;
+//            if (v[2] > 0 && v[3] > 0) {
+//
+//                grad = v[3];
+//
+//            } else if (v[2] < 0 && v[3] > 0) {
+//
+//                grad = (1 - v[3]) + 1;
+//
+//            } else if (v[2] < 0 && v[3] < 0) {
+//                grad = -v[3];
+//            } else if (v[2] > 0 && v[3] < 0) {
+//                grad = v[3] + 2;
+//            }
+
+            //Zweiter Versuch
+//            double grad = 0;
+//            if (v[2] > 0 && v[3] > 0) {
+//                if (v[3] > 0.5) {
+//                    grad = 1 - v[2];
+//                } else {
+//                    grad = v[3];
+//                }
+//            } else if (v[2] < 0 && v[3] > 0) {
+//                if (v[3] > 0.5) {
+//                    grad = -v[2] + 1;
+//                } else {
+//                    grad = (1 - v[3]) + 1;
+//                }
+//            } else if (v[2] < 0 && v[3] < 0) {
+//                if (v[3] < -0.5) {
+//                    grad = v[2] + 1;
+//                } else {
+//                    grad = -v[3];
+//                }
+//            } else if (v[2] > 0 && v[3] < 0) {
+//                if (v[3] < -0.5) {
+//                    grad = v[2] + 1;
+//                } else {
+//                    grad = v[3] + 2;
+//                }
+//            }
+
+            sensorX.setText(String.format("%.3f", v[3]));
+            sensorY.setText(String.format("%.3f", grad * 0.5));
             sensorZ.setText(String.format("%.3f", v[2]));
-            if (millis - lastSendRosationData > 100){
-                sendSensorData("GAME_ROTATION", v[0], v[1], v[2]);
-                lastSendRosationData = millis;
+
+            //Log.d("gettinDataRight", v[3] + " - " + String.valueOf(grad * 0.5) + " - " + v[2]);
+
+            if (millis - lastSendRotationData > 100) {
+                sendSensorData("GAME_ROTATION", v[0], v[1], (float) (grad * 0.5));
+                lastSendRotationData = millis;
             }
         } else if (event.sensor == linearAccSensor) {
-            if (millis - lastSendAccData > 100){
-                sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
+            if (millis - lastSendAccData > 100) {
+                //sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
                 lastSendAccData = millis;
             }
         }
+
+
     }
 
     @Override

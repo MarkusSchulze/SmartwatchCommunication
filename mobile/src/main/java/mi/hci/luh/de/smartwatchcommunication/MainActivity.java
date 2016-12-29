@@ -13,6 +13,9 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        //HIER einfach die activity wählen, die man starten möchte Auswahl im Moment
+        // RotationVectorDemo oder SensorAnalysis
         Intent i = new Intent(this, SensorAnalysis.class);
         startActivity(i);
     }

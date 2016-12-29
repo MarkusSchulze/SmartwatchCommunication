@@ -36,7 +36,7 @@ public class CursorView extends View {
         bubble.draw(canvas);
     }
 
-    protected void setCursor(int x, int y) {
-        bubble.setBounds(x, y, x + diameter, y + diameter);
+    protected void setCursor(float x, float y) {
+        bubble.setBounds((int) x, (int) y, (int) x + diameter, (int) y + diameter);
     }
 }
