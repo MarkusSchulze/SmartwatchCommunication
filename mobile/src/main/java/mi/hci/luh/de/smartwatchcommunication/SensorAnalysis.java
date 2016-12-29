@@ -1,16 +1,12 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -58,15 +54,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         startTime = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
 
-        //Zeichnen
-//        paint = new Paint();
-//        paint.setColor(Color.parseColor("#CD5C5C"));
-//        bg = Bitmap.createBitmap(1000, 1000, Bitmap.Config.ARGB_8888);
-//        canvas = new Canvas(bg);
-
-        //LinearLayout ll = (LinearLayout) findViewById(R.id.activity_main);
-        //ll.setBackgroundDrawable(new BitmapDrawable(bg));
-
         LinearLayout rect = (LinearLayout) findViewById(R.id.rect);
         cursorView = new CursorView(this);
         rect.addView(cursorView);
@@ -108,9 +95,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 public void onResult(@NonNull DataItemBuffer dataItems) {
                     if (dataItems.getCount() != 0) {
                         DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
-
-                        // This should read the correct value.
-                        float value = dataMapItem.getDataMap().getFloat("x");
 
                         lastDataType = dataMapItem.getDataMap().getString("TYPE");
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
@@ -177,7 +161,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         if (lastDataType.contentEquals("GAME_ROTATION")) {
 
             currentY = lastData[2];
-            currentX = (-1) * lastData[1];
+            currentX = lastData[1];
             int width = cursorView.getWidth();
             int height = cursorView.getHeight();
 
@@ -197,10 +181,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 //                double x = 0.5 * x_rot + 0.5 * x_dist;
 //                double y = 0.5 * y_rot + 0.5 * y_dist;
 //
-//                point_x = (int) (x_rot * width / 2 + width / 2);
+//                vertical = (int) (x_rot * width / 2 + width / 2);
 //                horizontal = (int) (y_rot * height / 2 + height / 2);
 //            } else {
-//                point_x = (int) (currentX * height ) + height / 2;
+//                vertical = (int) (currentX * height ) + height / 2;
 //                horizontal = (int) (lastData[2] - calibration[2]) * width  + width / 2;
 //                if (horizontal > width){
 //                    horizontal -= width;
@@ -209,8 +193,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 //                }
 //            }
 
-            int point_x = (int) (currentX * height) + height / 2;
-            float horizontal = (-(lastData[2] - calibration[2]) * width + width / 2);
+            //Umrechnung an die Kalibrierung
+            //TODO Vertikale Richtung muss noch verbessert werden
+            int vertical = (int) (currentX * height) + height / 2;
+            float horizontal = ((lastData[2] - calibration[2]) * width + width / 2);
             if (horizontal > width) {
                 horizontal -= width;
             } else if (horizontal < 0) {
@@ -219,11 +205,11 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
 
             //Cursor bleibt im Bild auch wenn man außerhalb zeigt
-            if (point_x > height) {
-                point_x = height;
+            if (vertical > height) {
+                vertical = height;
             }
-            if (point_x < 1) {
-                point_x = 1;
+            if (vertical < 1) {
+                vertical = 1;
             }
             if (horizontal > width) {
                 horizontal = width;
@@ -233,8 +219,8 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             }
 
 
-//            canvas.drawRect(horizontal, point_x, horizontal + 10, point_x + 10, paint)
-            cursorView.setCursor(horizontal, point_x);
+//            canvas.drawRect(horizontal, vertical, horizontal + 10, vertical + 10, paint)
+            cursorView.setCursor(horizontal, vertical);
             cursorView.invalidate();
 //            LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
 //            ll.setBackgroundDrawable(new BitmapDrawable(bg));
@@ -242,65 +228,65 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         }
     }
 
-    public void ClickButton() {
-        if (!cursorEnabled) {
-            cursorEnabled = true;
-            middleX = currentX;
-            middleY = currentY;
-        } else {
-            cursorEnabled = false;
-        }
-        switch (clickCount) {
-            case 0:
-                Log.d("Calibration", "Start Calibration");
-                showData.setText("Choose Top");
-                break;
-            case 1:
-                topY = currentY;
-                distY_top = distY;
-                Log.d("Calibration", String.format("topY: %f", topY));
-                Log.d("Calibration", String.format("topY dist: %f", distY));
-                showData.setText("Choose Bottom");
-
-
-                break;
-            case 2:
-                bottomY = currentY;
-                distY_bottom = distY;
-                Log.d("Calibration", String.format("bottomY: %f", bottomY));
-                Log.d("Calibration", String.format("bottomY dist: %f", distY));
-                showData.setText("Choose Right");
-
-
-                break;
-            case 3:
-                rightX = currentX;
-                distX_right = distX;
-                Log.d("Calibration", String.format("rightX: %f", rightX));
-                Log.d("Calibration", String.format("rightX dist: %f", distX));
-                showData.setText("Choose Left");
-
-
-                break;
-            case 4:
-                leftX = currentX;
-                distX_left = distX;
-                Log.d("Calibration", String.format("leftX: %f", leftX));
-                Log.d("Calibration", String.format("leftX dist: %f", distX));
-                showData.setText("Finish");
-
-                break;
-            case 5:
-                calibrated = true;
-                Log.d("Calibration", "Calibration completed");
-                showData.setText("Completed");
-                break;
-            default:
-                break;
-
-        }
-        clickCount++;
-    }
+//    public void ClickButton() {
+//        if (!cursorEnabled) {
+//            cursorEnabled = true;
+//            middleX = currentX;
+//            middleY = currentY;
+//        } else {
+//            cursorEnabled = false;
+//        }
+//        switch (clickCount) {
+//            case 0:
+//                Log.d("Calibration", "Start Calibration");
+//                showData.setText("Choose Top");
+//                break;
+//            case 1:
+//                topY = currentY;
+//                distY_top = distY;
+//                Log.d("Calibration", String.format("topY: %f", topY));
+//                Log.d("Calibration", String.format("topY dist: %f", distY));
+//                showData.setText("Choose Bottom");
+//
+//
+//                break;
+//            case 2:
+//                bottomY = currentY;
+//                distY_bottom = distY;
+//                Log.d("Calibration", String.format("bottomY: %f", bottomY));
+//                Log.d("Calibration", String.format("bottomY dist: %f", distY));
+//                showData.setText("Choose Right");
+//
+//
+//                break;
+//            case 3:
+//                rightX = currentX;
+//                distX_right = distX;
+//                Log.d("Calibration", String.format("rightX: %f", rightX));
+//                Log.d("Calibration", String.format("rightX dist: %f", distX));
+//                showData.setText("Choose Left");
+//
+//
+//                break;
+//            case 4:
+//                leftX = currentX;
+//                distX_left = distX;
+//                Log.d("Calibration", String.format("leftX: %f", leftX));
+//                Log.d("Calibration", String.format("leftX dist: %f", distX));
+//                showData.setText("Finish");
+//
+//                break;
+//            case 5:
+//                calibrated = true;
+//                Log.d("Calibration", "Calibration completed");
+//                showData.setText("Completed");
+//                break;
+//            default:
+//                break;
+//
+//        }
+//        clickCount++;
+//    }
 
 //    public void drawSensorData() {
 //        if (lastDataType.contentEquals("LINEAR_ACC")) {

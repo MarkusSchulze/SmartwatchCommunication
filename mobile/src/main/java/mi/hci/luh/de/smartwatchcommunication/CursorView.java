@@ -13,8 +13,6 @@ import android.view.View;
 
 public class CursorView extends View {
     private int diameter;
-    private int x;
-    private int y;
     private ShapeDrawable bubble;
 
     public CursorView(Context context) {
@@ -23,8 +21,8 @@ public class CursorView extends View {
     }
 
     private void createBubble() {
-        x = 200;
-        y = 300;
+        int x = 200;
+        int y = 300;
         diameter = 20;
         bubble = new ShapeDrawable(new OvalShape());
         bubble.setBounds(x, y, x + diameter, y + diameter);

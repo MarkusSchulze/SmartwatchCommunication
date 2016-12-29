@@ -29,9 +29,9 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     long lastSendAccData = 0;
     private BoxInsetLayout mContainerView;
     private TextView sensorX, sensorY, sensorZ;
-    private Button setMiddle;
     private boolean reset = false;
-    private Sensor gameRotationSensor, linearAccSensor, gynoscopeSensor, rotationSensor, geoSensor, gravitySensor;
+    private Sensor gameRotationSensor;
+    private Sensor linearAccSensor;
     private GoogleApiClient mGoogleApiClient;
 
     @Override
@@ -50,22 +50,15 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR); //works
         sensorManager.registerListener(this, gameRotationSensor, SensorManager.SENSOR_DELAY_FASTEST);
         linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION); //works
-        sensorManager.registerListener(this, linearAccSensor, 100 * 1000);
-        gynoscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE); //works
-        sensorManager.registerListener(this, gynoscopeSensor, 100 * 1000);
-        rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-        sensorManager.registerListener(this, rotationSensor, 100 * 1000);
-        geoSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR);
-        sensorManager.registerListener(this, geoSensor, 100 * 1000);
-        gravitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
-        sensorManager.registerListener(this, gravitySensor, 100 * 1000);
-
+        sensorManager.registerListener(this, linearAccSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        Sensor gynoscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        sensorManager.registerListener(this, gynoscopeSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         sensorX = (TextView) findViewById(R.id.sensor_X);
         sensorY = (TextView) findViewById(R.id.sensor_Y);
         sensorZ = (TextView) findViewById(R.id.sensor_Z);
 
-        setMiddle = (Button) findViewById(R.id.BigButton);
+        Button setMiddle = (Button) findViewById(R.id.BigButton);
         setMiddle.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 reset = true;
@@ -158,7 +151,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             // Werte gegen 1 geben ein schlechteres Sensorverhalten, deswegen der Welchsel zwischen den beiden SensorAchsen
             // Normierung von Werten zwischen -1 und 1 auf 0 bis 2
             // Dritter Versuch
-            double grad = 0;
+            double grad;
             double x1 = 0;
             double x2 = 0;
             if (v[2] > 0 && v[3] > 0) {
@@ -227,7 +220,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             //Log.d("gettinDataRight", v[3] + " - " + String.valueOf(grad * 0.5) + " - " + v[2]);
 
             if (millis - lastSendRotationData > 100) {
-                sendSensorData("GAME_ROTATION", v[0], v[1], (float) (grad * 0.5));
+                sendSensorData("GAME_ROTATION", v[0], -2*v[1], (float) (grad * -2));
                 lastSendRotationData = millis;
             }
         } else if (event.sensor == linearAccSensor) {
