@@ -23,7 +23,7 @@ public class CursorView extends View {
     private void createBubble() {
         int x = 200;
         int y = 300;
-        diameter = 50;
+        diameter = 100;
         bubble = new ShapeDrawable(new OvalShape());
         bubble.setBounds(x, y, x + diameter, y + diameter);
         bubble.getPaint().setColor(0xff00cccc);

@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -201,7 +202,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
             //Umrechnung an die Kalibrierung
             //TODO Vertikale Richtung muss noch verbessert werden
-            float y = ((-currentX + calibration[1]) * height) + height / 2;
+            float y = ((-currentX + calibration[1]) * height*2) + height / 2;
             float x = ((-currentY + calibration[2]) * width + width / 2);
 
             //Cursor bleibt im Bild auch wenn man außerhalb zeigt
@@ -218,9 +219,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 x = 1;
             }*/
 
-
-           // Log.d("++++ x,y ++++ ", String.format("%f, %f", x, y));
-          //  Log.d("currentX # currentX ", String.format("%f, %f", currentX, currentY));
+            Log.d("x,y,currentX,currentY", String.format("%f, %f, %f, %f", x, y, currentX, currentY));
 
 //            canvas.drawRect(x, y, x + 10, y + 10, paint)
             cursorView.setCursor(x, y, width, height);
