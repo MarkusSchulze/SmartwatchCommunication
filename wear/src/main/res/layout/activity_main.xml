@@ -14,27 +14,30 @@
 
         <TextView
             android:id="@+id/sensor_X"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="placeholder 1" />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="placeholder 1"
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/sensor_Y"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="placeholder 2" />
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="placeholder 2"
+            android:gravity="center" />
 
         <TextView
             android:id="@+id/sensor_Z"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="placeholder 3" />
+            android:layout_height="match_parent"
+            android:text="placeholder 3"
+            android:gravity="center" />
 
         <Button
             android:id="@+id/BigButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Button" />
+            android:layout_width="wrap_content"
+            android:layout_height="91dp"
+            android:text="Reset" />
     </LinearLayout>
 
 </android.support.wearable.view.BoxInsetLayout>

@@ -7,6 +7,7 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -79,6 +80,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         calibration[0] = 0.0f;
         calibration[1] = 0.0f;
         calibration[2] = 0.0f;
+
+        // int width = cursorView.getWidth();
+        //int height = cursorView.getHeight();
+        //cursorView.setCursor(width/2, height/2, width, height);
     }
 
     long startTime = 0;
@@ -158,10 +163,12 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 //            Log.d("distX", String.format("distX: %f", distX));
 //            Log.d("distY", String.format("distY: %f", distY));
 //        }
-        if (lastDataType.contentEquals("GAME_ROTATION")) {
 
-            currentY = lastData[2];
+       if (lastDataType.contentEquals("GAME_ROTATION")) {
+
             currentX = lastData[1];
+            currentY = lastData[2];
+
             int width = cursorView.getWidth();
             int height = cursorView.getHeight();
 
@@ -181,46 +188,43 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 //                double x = 0.5 * x_rot + 0.5 * x_dist;
 //                double y = 0.5 * y_rot + 0.5 * y_dist;
 //
-//                vertical = (int) (x_rot * width / 2 + width / 2);
-//                horizontal = (int) (y_rot * height / 2 + height / 2);
+//                y = (int) (x_rot * width / 2 + width / 2);
+//                x = (int) (y_rot * height / 2 + height / 2);
 //            } else {
-//                vertical = (int) (currentX * height ) + height / 2;
-//                horizontal = (int) (lastData[2] - calibration[2]) * width  + width / 2;
-//                if (horizontal > width){
-//                    horizontal -= width;
-//                }else if (horizontal < 0){
+//                y = (int) (currentX * height ) + height / 2;
+//                x = (int) (lastData[2] - calibration[2]) * width  + width / 2;
+//                if (x > width){
+//                    x -= width;
+//                }else if (x < 0){
 //
 //                }
 //            }
 
             //Umrechnung an die Kalibrierung
             //TODO Vertikale Richtung muss noch verbessert werden
-            int vertical = (int) (currentX * height) + height / 2;
-            float horizontal = ((lastData[2] - calibration[2]) * width + width / 2);
-            if (horizontal > width) {
-                horizontal -= width;
-            } else if (horizontal < 0) {
-                horizontal += width;
-            }
-
+            float y = ((-currentX + calibration[1]) * height) + height / 2;
+            float x = ((-currentY + calibration[2]) * width + width / 2);
 
             //Cursor bleibt im Bild auch wenn man außerhalb zeigt
-            if (vertical > height) {
-                vertical = height;
+            /*if (y > height) {
+                y = height;
             }
-            if (vertical < 1) {
-                vertical = 1;
+            if (y < 1) {
+                y = 1;
             }
-            if (horizontal > width) {
-                horizontal = width;
+            if (x > width) {
+                x = width;
             }
-            if (horizontal < 1) {
-                horizontal = 1;
-            }
+            if (x < 1) {
+                x = 1;
+            }*/
 
 
-//            canvas.drawRect(horizontal, vertical, horizontal + 10, vertical + 10, paint)
-            cursorView.setCursor(horizontal, vertical);
+           // Log.d("++++ x,y ++++ ", String.format("%f, %f", x, y));
+          //  Log.d("currentX # currentX ", String.format("%f, %f", currentX, currentY));
+
+//            canvas.drawRect(x, y, x + 10, y + 10, paint)
+            cursorView.setCursor(x, y, width, height);
             cursorView.invalidate();
 //            LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
 //            ll.setBackgroundDrawable(new BitmapDrawable(bg));
@@ -396,22 +400,23 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-
+        Log.d("onConnected", "");
     }
 
     @Override
     public void onPause() {
         super.onPause();
         timerHandler.removeCallbacks(timerRunnable);
+        Log.d("onPause", "");
     }
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        Log.d("onConnectionSuspended", "");
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
+        Log.d("onConnectionFailed", "");
     }
 }

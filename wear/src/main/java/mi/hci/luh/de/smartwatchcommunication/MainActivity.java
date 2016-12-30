@@ -213,9 +213,9 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 //                }
 //            }
 
-            sensorX.setText(String.format("%.3f", v[3]));
-            sensorY.setText(String.format("%.3f", grad * 0.5));
-            sensorZ.setText(String.format("%.3f", v[2]));
+            sensorX.setText("x: " + String.format("%.3f", v[3]));
+            sensorY.setText("y: " + String.format("%.3f", grad * 0.5));
+            sensorZ.setText("z: " + String.format("%.3f", v[2]));
 
             //Log.d("gettinDataRight", v[3] + " - " + String.valueOf(grad * 0.5) + " - " + v[2]);
 
