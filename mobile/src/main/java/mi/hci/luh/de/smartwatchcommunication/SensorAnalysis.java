@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -400,23 +399,20 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {
-        Log.d("onConnected", "");
+
     }
 
     @Override
     public void onPause() {
         super.onPause();
         timerHandler.removeCallbacks(timerRunnable);
-        Log.d("onPause", "");
     }
 
     @Override
     public void onConnectionSuspended(int i) {
-        Log.d("onConnectionSuspended", "");
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.d("onConnectionFailed", "");
     }
 }
