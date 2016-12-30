@@ -223,14 +223,13 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 sendSensorData("GAME_ROTATION", v[0], -2*v[1], (float) (grad * -2));
                 lastSendRotationData = millis;
             }
+
         } else if (event.sensor == linearAccSensor) {
             if (millis - lastSendAccData > 100) {
                 //sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
                 lastSendAccData = millis;
             }
         }
-
-
     }
 
     @Override
