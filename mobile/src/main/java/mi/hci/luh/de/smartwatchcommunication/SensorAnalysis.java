@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.LinearLayout;
 
 import com.google.android.gms.appindexing.AppIndex;
@@ -34,11 +35,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
     private int width;
     private int height;
-
-    private float xref;
-    private float yref;
-    private float xnorm;
-    private float ynorm;
 
     private float[] XY;
 
@@ -102,6 +98,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         startTime = System.currentTimeMillis();
         timerHandler.postDelayed(timerRunnable, 0);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         LinearLayout rect = (LinearLayout) findViewById(R.id.rect);
         cursorView = new CursorView(this);
         rect.addView(cursorView);
@@ -125,71 +122,39 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
         if (lastDataType.contentEquals("GAME_ROTATION")) {
 
-            /*currentX = lastData[1];
-            currentY = lastData[2];*/
-
             width = cursorView.getWidth();
             height = cursorView.getHeight();
-            xnorm = height / 360;
-            ynorm = width / 180;
 
             currentX = lastData[0];
             currentY = lastData[1];
 
-            /*XY = calcXY(currentX, currentY);
-            x = XY[0];
-            y = XY[1];*/
-
             //Umrechnung an die Kalibrierung
             //TODO Vertikale Richtung muss noch verbessert werden
-            /*y = ((-currentX + calibration[1]) * height*2) + height / 2;
-            x = ((-currentY + calibration[2]) * width + width / 2);*/
+            int vertical = (int) (currentY * height) + height / 2;
+            float horizontal = ((lastData[0] - calibration[0]) * width + width / 2);
+            if (horizontal > width) {
+                horizontal -= width;
+            } else if (horizontal < 0) {
+                horizontal += width;
+            }
 
-            x = ((-currentX + calibration[0])/360 * height) + height / 2;
-            y = ((-currentY + calibration[1])/90 * width) + width / 2;
+            //Cursor bleibt im Bild auch wenn man außerhalb zeigt
+            if (vertical > height) {
+                vertical = height;
+            }
+            if (vertical < 1) {
+                vertical = 1;
+            }
+            if (horizontal > width) {
+                horizontal = width;
+            }
+            if (horizontal < 1) {
+                horizontal = 1;
+            }
 
-            Log.d("x,y,cal0,cal1", String.format("%f, %f, %f, %f", x, y, calibration[0], calibration[1]));
-            //Log.d("w,h", String.format("%d, %d", width, height));
-
-//            canvas.drawRect(x, y, x + 10, y + 10, paint)
-            cursorView.setCursor(x, y, width, height);
+            cursorView.setCursor(horizontal, vertical);
             cursorView.invalidate();
-//            LinearLayout ll = (LinearLayout) findViewById(R.id.rect);
-//            ll.setBackgroundDrawable(new BitmapDrawable(bg));
-
         }
-    }
-
-    private float[] calcXY(float pitch, float yaw){
-        float[] XY = new float[2];
-
-        float x = (pitch * xnorm) + calibration[0];
-        float y = (yaw * ynorm) + calibration[1];
-
-        //Cursor bleibt im Bild auch wenn man außerhalb zeigt
-        if (x > height) {
-            x = height;
-        }
-        if (x < 1) {
-            x = 1;
-        }
-        if (y > width) {
-            y = width;
-        }
-        if (y < 1) {
-            y = 1;
-        }
-
-        XY[0] = x;
-        XY[1] = y;
-        return XY;
-    }
-
-    private float mod(float x, float y) {
-        float result = x % y;
-        if (result < 0)
-            result += y;
-        return result;
     }
 
     @Override

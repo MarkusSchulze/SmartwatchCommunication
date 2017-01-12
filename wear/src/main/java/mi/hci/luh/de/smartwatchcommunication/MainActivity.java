@@ -267,7 +267,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 sensorY.setText("y: " + String.format("%.3f", y));
                 sensorZ.setText("z: " + String.format("%.3f", z));
 
-                sendSensorData("GAME_ROTATION", x, y, z);
+                sendSensorData("GAME_ROTATION", x/360, y/90, z);
                 lastSendRotationData = millis;
             }
 

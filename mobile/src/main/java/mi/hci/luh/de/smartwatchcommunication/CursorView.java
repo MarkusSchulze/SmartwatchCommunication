@@ -34,28 +34,7 @@ public class CursorView extends View {
         bubble.draw(canvas);
     }
 
-    protected void setCursor(float x, float y, int width, int height) {
-
-        //Cursor bleibt im Bild auch wenn man außerhalb zeigt
-        if ((int) x >= width) {
-            x = (int) width - diameter;
-        }
-        if (x < 1) {
-            x = 1;
-        }
-
-        if ((int) y >= height) {
-            y = (int) height - diameter;
-        }
-        if (y < 1) {
-            y = 1;
-        }
-
-        /*if (reset){
-            x = width/2;
-            y = height/2;
-        }*/
-
+    protected void setCursor(float x, float y) {
         bubble.setBounds((int) x, (int) y, (int) x + diameter, (int) y + diameter);
     }
 }
