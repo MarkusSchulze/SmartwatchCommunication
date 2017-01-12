@@ -34,6 +34,16 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     private Sensor linearAccSensor;
     private GoogleApiClient mGoogleApiClient;
 
+    private float[] mRotationMatrix = new float[16];
+
+    private float[] mOrientation = new float[9];
+
+    private float[] history = new float[2];
+
+    private float mYaw;
+
+    private float mPitch;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -151,7 +161,8 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             // Werte gegen 1 geben ein schlechteres Sensorverhalten, deswegen der Welchsel zwischen den beiden SensorAchsen
             // Normierung von Werten zwischen -1 und 1 auf 0 bis 2
             // Dritter Versuch
-            double grad;
+
+            /*double grad;
             double x1 = 0;
             double x2 = 0;
             if (v[2] > 0 && v[3] > 0) {
@@ -167,7 +178,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 x1 = v[2] + 1;
                 x2 = v[3] + 2;
             }
-            grad = (x1 + x2) / 2;
+            grad = (x1 + x2) / 2;*/
 
             // Erster Versuch
 //            double grad = 0;
@@ -213,14 +224,50 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 //                }
 //            }
 
-            sensorX.setText("x: " + String.format("%.3f", v[3]));
+            /*sensorX.setText("x: " + String.format("%.3f", v[3]));
             sensorY.setText("y: " + String.format("%.3f", grad * 0.5));
-            sensorZ.setText("z: " + String.format("%.3f", v[2]));
+            sensorZ.setText("z: " + String.format("%.3f", v[2]));*/
 
             //Log.d("gettinDataRight", v[3] + " - " + String.valueOf(grad * 0.5) + " - " + v[2]);
 
+
+            // see: http://stackoverflow.com/questions/23658572/game-rotation-vector-sensor
+            SensorManager.getRotationMatrixFromVector(mRotationMatrix, event.values);
+            SensorManager.remapCoordinateSystem(mRotationMatrix, SensorManager.AXIS_Y,
+                    SensorManager.AXIS_Z, mRotationMatrix);
+            SensorManager.getOrientation(mRotationMatrix, mOrientation);
+
+            mPitch = (float) Math.toDegrees(mOrientation[1]); // Pitch is the rotations about the y axis  (between -90 and 90 deg);
+            mYaw = (float) Math.toDegrees(mOrientation[0]); // Yaw is the rotation about the z axis (between -180 and 180).
+
+            float yDelta = history[0] - mPitch;
+            float zDelta = history[1] - mYaw;  // Currently unused
+
+            history[0] = mPitch;
+            history[1] = mYaw;
+
+            // Make sure value is between 0-360
+            mYaw = mod(mYaw, 360.0f);
+
+
             if (millis - lastSendRotationData > 100) {
-                sendSensorData("GAME_ROTATION", v[0], -2*v[1], (float) (grad * -2));
+                /*float x = v[0];
+                float y = -2*v[1];
+                float z = (float) (grad * -2);*/
+
+                /*float x = v[0];
+                float y = v[1];
+                float z = v[2];*/
+
+                float x = mYaw;
+                float y = mPitch;
+                float z = zDelta;
+
+                sensorX.setText("x: " + String.format("%.3f", x));
+                sensorY.setText("y: " + String.format("%.3f", y));
+                sensorZ.setText("z: " + String.format("%.3f", z));
+
+                sendSensorData("GAME_ROTATION", x, y, z);
                 lastSendRotationData = millis;
             }
 
@@ -235,5 +282,13 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
+    }
+
+    private float mod(float x, float y)
+    {
+        float result = x % y;
+        if (result < 0)
+            result += y;
+        return result;
     }
 }

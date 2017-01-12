@@ -51,6 +51,11 @@ public class CursorView extends View {
             y = 1;
         }
 
+        /*if (reset){
+            x = width/2;
+            y = height/2;
+        }*/
+
         bubble.setBounds((int) x, (int) y, (int) x + diameter, (int) y + diameter);
     }
 }
