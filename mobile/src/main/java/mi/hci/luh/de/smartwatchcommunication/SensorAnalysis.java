@@ -28,18 +28,9 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private final Float[] calibration = new Float[3];
     long startTime = 0;
     Handler timerHandler = new Handler();
-    private float currentX, currentY;
     private String lastDataType;
     private GoogleApiClient mGoogleApiClient;
     private CursorView cursorView;
-
-    private int width;
-    private int height;
-
-    private float[] XY;
-
-    private float y;
-    private float x;
 
     Runnable timerRunnable = new Runnable() {
         @Override
@@ -65,17 +56,6 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
                             calibration[2] = lastData[2];
-
-                            //xref = lastData[0];
-                            //yref = lastData[1];
-                            /*calibration[0] = height - mod(x, height) - (height / 2);
-                            calibration[1] = width - mod(y, width) - (width / 2);
-
-                            Log.d("x,y ---test", String.format("%d, %d", height, width));
-                            Log.d("x,y ---test", String.format("%f, %f", mod(x, height), mod(y, width)));
-                            Log.d("x,y ---test", String.format("%f, %f", height - mod(x, height), width - mod(y, width)));
-                            Log.d("x,y ---test", String.format("%d, %d", (height / 2), (width / 2)));*/
-
                         } else {
                             SensorDataChanged();
                         }
@@ -114,23 +94,17 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
         calibration[0] = 0.0f;
         calibration[1] = 0.0f;
         calibration[2] = 0.0f;
-
-        //cursorView.setCursor(width/2, height/2, width, height);
     }
 
     public void SensorDataChanged() {
 
         if (lastDataType.contentEquals("GAME_ROTATION")) {
 
-            width = cursorView.getWidth();
-            height = cursorView.getHeight();
-
-            currentX = lastData[0];
-            currentY = lastData[1];
+            int width = cursorView.getWidth();
+            int height = cursorView.getHeight();
 
             //Umrechnung an die Kalibrierung
-            //TODO Vertikale Richtung muss noch verbessert werden
-            int vertical = (int) (currentY * height) + height / 2;
+            int vertical = (int) (lastData[1] * height) + height / 2;
             float horizontal = ((lastData[0] - calibration[0]) * width + width / 2);
             if (horizontal > width) {
                 horizontal -= width;
@@ -152,7 +126,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 horizontal = 1;
             }
 
-            cursorView.setCursor(horizontal, vertical);
+            cursorView.setCursor(horizontal, vertical, width, height);
             cursorView.invalidate();
         }
     }
