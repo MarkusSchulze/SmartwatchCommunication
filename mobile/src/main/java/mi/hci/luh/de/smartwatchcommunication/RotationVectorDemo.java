@@ -14,21 +14,34 @@ package mi.hci.luh.de.smartwatchcommunication;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-        import java.nio.ByteBuffer;
-        import java.nio.ByteOrder;
-        import java.nio.FloatBuffer;
-        import java.util.List;
 
-        import javax.microedition.khronos.egl.EGLConfig;
-        import javax.microedition.khronos.opengles.GL10;
-        import android.app.Activity;
-        import android.hardware.Sensor;
-        import android.hardware.SensorEvent;
-        import android.hardware.SensorEventListener;
-        import android.hardware.SensorManager;
-        import android.opengl.GLSurfaceView;
-        import android.os.Bundle;
-        import android.util.Log;
+import android.app.Activity;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.opengl.GLSurfaceView;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
+
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.wearable.DataItemBuffer;
+import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.Wearable;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+
+import javax.microedition.khronos.egl.EGLConfig;
+import javax.microedition.khronos.opengles.GL10;
 
 /**
  * Wrapper activity demonstrating the use of the new
@@ -38,27 +51,85 @@ package mi.hci.luh.de.smartwatchcommunication;
  * @see Sensor
  * @see SensorEvent
  * @see SensorManager
- *
  */
-public class RotationVectorDemo extends Activity {
+public class RotationVectorDemo extends Activity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
     private GLSurfaceView mGLSurfaceView;
     private SensorManager mSensorManager;
     private MyRenderer mRenderer;
+
+    private String lastDataType;
+    private float[] lastData = new float[16];
+    private float[] mRotationMatrix = new float[16];
+    private com.google.android.gms.common.api.GoogleApiClient mGoogleApiClient;
+    private Handler timerHandler = new Handler();
+    private long startTime = 0;
+
+
+    Runnable timerRunnable = new Runnable() {
+        @Override
+        public void run() {
+
+            //txt_output.setText(String.format("%d:%02d", minutes, seconds));
+
+            PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
+            results.setResultCallback(new ResultCallback<DataItemBuffer>() {
+                @Override
+                public void onResult(@NonNull DataItemBuffer dataItems) {
+
+                    if (dataItems.getCount() != 0) {
+                        DataMapItem dataMapItem = DataMapItem.fromDataItem(dataItems.get(0));
+
+                        lastDataType = dataMapItem.getDataMap().getString("TYPE");
+                        lastData = dataMapItem.getDataMap().getFloatArray("rot");
+                        // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
+                        // des Sensors zum Startwert des Cursors
+                        mRotationMatrix = lastData;
+                        Log.d("test", String.format("%f", mRotationMatrix[0]));
+                    }
+
+                    dataItems.release();
+                }
+            });
+
+            timerHandler.postDelayed(this, 50);
+        }
+    };
+
+    /*public void SensorDataChanged() {
+        if (lastDataType.contentEquals("GAME_ROTATION")) {
+
+        }
+    }*/
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // Get an instance of the SensorManager
-        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+
+        //Timer starten
+        startTime = System.currentTimeMillis();
+        timerHandler.postDelayed(timerRunnable, 1);
+
+        /*mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
         final List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
         for(Sensor type : deviceSensors){
             Log.e("sensors",type.getStringType());
-        }
+        }*/
+
         // Create our Preview view and set it as the content of our
         // Activity
         mRenderer = new MyRenderer();
         mGLSurfaceView = new GLSurfaceView(this);
         mGLSurfaceView.setRenderer(mRenderer);
         setContentView(mGLSurfaceView);
+
+        // Init Google Service API
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(AppIndex.API).build();
+        mGoogleApiClient.connect();
     }
     @Override
     protected void onResume() {
@@ -75,15 +146,16 @@ public class RotationVectorDemo extends Activity {
         super.onPause();
         mRenderer.stop();
         mGLSurfaceView.onPause();
+        timerHandler.removeCallbacks(timerRunnable);
     }
+
     class MyRenderer implements GLSurfaceView.Renderer, SensorEventListener {
         private Cube mCube;
-        private Sensor mRotationVectorSensor;
-        private final float[] mRotationMatrix = new float[16];
+        //private Sensor mRotationVectorSensor;
+        //private final float[] mRotationMatrix = new float[16];
         public MyRenderer() {
             // find the rotation-vector sensor
-            mRotationVectorSensor = mSensorManager.getDefaultSensor(
-                    Sensor.TYPE_ROTATION_VECTOR);
+            //mRotationVectorSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
             mCube = new Cube();
             // initialize the rotation matrix to identity
             mRotationMatrix[ 0] = 1;
@@ -94,23 +166,25 @@ public class RotationVectorDemo extends Activity {
         public void start() {
             // enable our sensor when the activity is resumed, ask for
             // 10 ms updates.
-            mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
+            //mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
         }
         public void stop() {
             // make sure to turn our sensor off when the activity is paused
-            mSensorManager.unregisterListener(this);
+            //mSensorManager.unregisterListener(this);
         }
+
         public void onSensorChanged(SensorEvent event) {
             // we received a sensor event. it is a good practice to check
             // that we received the proper event
-            if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+         /*   if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
                 // convert the rotation-vector to a 4x4 matrix. the matrix
                 // is interpreted by Open GL as the inverse of the
                 // rotation-vector, which is what we want.
                 SensorManager.getRotationMatrixFromVector(
                         mRotationMatrix , event.values);
-            }
+            }*/
         }
+
         public void onDrawFrame(GL10 gl) {
             // clear screen
             gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
@@ -190,5 +264,18 @@ public class RotationVectorDemo extends Activity {
         }
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
         }
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
     }
 }

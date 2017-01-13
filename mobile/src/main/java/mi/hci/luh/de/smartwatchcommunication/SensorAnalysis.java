@@ -49,13 +49,13 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastDataType = dataMapItem.getDataMap().getString("TYPE");
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
-                        lastData[2] = dataMapItem.getDataMap().getFloat("z");
+                        //lastData[2] = dataMapItem.getDataMap().getFloat("z");
                         // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
                         // des Sensors zum Startwert des Cursors
                         if (lastDataType.contentEquals("RESET")) {
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
-                            calibration[2] = lastData[2];
+                            //calibration[2] = lastData[2];
                         } else {
                             SensorDataChanged();
                         }
@@ -93,7 +93,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
         calibration[0] = 0.0f;
         calibration[1] = 0.0f;
-        calibration[2] = 0.0f;
+        //calibration[2] = 0.0f;
     }
 
     public void SensorDataChanged() {

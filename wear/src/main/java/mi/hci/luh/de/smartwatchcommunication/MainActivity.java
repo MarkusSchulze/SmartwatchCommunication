@@ -116,7 +116,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
     }
 
-    public void sendSensorData(String type, float x, float y, float z) {
+    public void sendSensorData(String type, float x, float y, float[] rotMatirx) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
         if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
@@ -126,7 +126,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
         putDataMapRequest.getDataMap().putFloat("x", x);
         putDataMapRequest.getDataMap().putFloat("y", y);
-        putDataMapRequest.getDataMap().putFloat("z", z);
+        putDataMapRequest.getDataMap().putFloatArray("rot", rotMatirx);
 
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         Wearable.DataApi.putDataItem(mGoogleApiClient, request);
@@ -241,7 +241,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             mYaw = (float) Math.toDegrees(mOrientation[0]); // Yaw is the rotation about the z axis (between -180 and 180).
 
             float yDelta = history[0] - mPitch;
-            float zDelta = history[1] - mYaw;  // Currently unused
+            float zDelta = history[1] - mYaw; // Currently unused
 
             history[0] = mPitch;
             history[1] = mYaw;
@@ -261,13 +261,13 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
                 float x = mYaw;
                 float y = mPitch;
-                float z = zDelta;
+                float z = 0.0f;
 
                 sensorX.setText("x: " + String.format("%.3f", x));
                 sensorY.setText("y: " + String.format("%.3f", y));
                 sensorZ.setText("z: " + String.format("%.3f", z));
 
-                sendSensorData("GAME_ROTATION", x/360, y/90, z);
+                sendSensorData("GAME_ROTATION", x/360, y/90, mRotationMatrix);
                 lastSendRotationData = millis;
             }
 
