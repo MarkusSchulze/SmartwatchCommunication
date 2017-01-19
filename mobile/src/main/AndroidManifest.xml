@@ -22,7 +22,14 @@
             android:name=".SensorAnalysis"
             android:screenOrientation="landscape">
         </activity>
-        <activity android:name=".RotationVectorDemo"> </activity>
+        <activity
+            android:name=".RotationVectorDemo"
+            android:screenOrientation="landscape">
+        </activity>
+        <activity
+            android:name=".RotationAndCursor"
+            android:screenOrientation="landscape">
+        </activity>
 
         <service
             android:name=".MyService"

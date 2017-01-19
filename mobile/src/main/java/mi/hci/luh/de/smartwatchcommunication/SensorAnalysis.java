@@ -124,7 +124,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
             //Umrechnung an die Kalibrierung
             int vertical = (int) (lastData[1] * height) + height / 2;
-            float horizontal = ((lastData[0] - calibration[0]) * width + width / 2);
+            int horizontal = (int) ((lastData[0] - calibration[0]) * width + width / 2);
             if (horizontal > width) {
                 horizontal -= width;
             } else if (horizontal < 0) {
@@ -144,7 +144,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             if (horizontal < 1) {
                 horizontal = 1;
             }
-            pointX = (int) horizontal;
+            pointX = horizontal;
             pointY = vertical;
 
             cursorView.setCursor(horizontal, vertical, width, height);
