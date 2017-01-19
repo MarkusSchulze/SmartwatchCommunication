@@ -31,6 +31,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     private String lastDataType;
     private GoogleApiClient mGoogleApiClient;
     private CursorView cursorView;
+    private int pointX, pointY;
 
     Runnable timerRunnable = new Runnable() {
         @Override
@@ -56,7 +57,9 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
                             //calibration[2] = lastData[2];
-                        } else {
+                        }
+
+                        else {
                             SensorDataChanged();
                         }
                     }
@@ -98,7 +101,23 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
     public void SensorDataChanged() {
 
-        if (lastDataType.contentEquals("GAME_ROTATION")) {
+        if (lastDataType.contentEquals("CLICK")) {
+            boolean found = false;
+            for(Rectangle r : cursorView.rectangles) {
+                if(r.find(this.pointX, this.pointY) != null) {
+                    found = true;
+                    this.cursorView.setBg(r.getColor());
+                }
+            }
+            if( found ) {
+                Log.d("Found", String.format("Rectangle found! "));
+            }
+            else {
+                Log.d("Not Found", String.format("Rectangle not found! "));
+
+            }
+        }
+        else if (lastDataType.contentEquals("GAME_ROTATION")) {
 
             int width = cursorView.getWidth();
             int height = cursorView.getHeight();
@@ -125,6 +144,8 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             if (horizontal < 1) {
                 horizontal = 1;
             }
+            pointX = (int) horizontal;
+            pointY = vertical;
 
             cursorView.setCursor(horizontal, vertical, width, height);
             cursorView.invalidate();

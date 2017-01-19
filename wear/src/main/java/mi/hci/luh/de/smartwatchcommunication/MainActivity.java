@@ -29,7 +29,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     long lastSendAccData = 0;
     private BoxInsetLayout mContainerView;
     private TextView sensorX, sensorY, sensorZ;
-    private boolean reset = false;
+    private boolean reset = false, click = false;
     private Sensor gameRotationSensor;
     private Sensor linearAccSensor;
     private GoogleApiClient mGoogleApiClient;
@@ -72,6 +72,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         setMiddle.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 reset = true;
+            }
+        });
+        Button clickButton = (Button) findViewById(R.id.Click);
+        clickButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                click = true;
             }
         });
 
@@ -121,7 +127,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
             reset = false;
-        } else {
+        }
+        else if (click) {
+            putDataMapRequest.getDataMap().putString("TYPE", "CLICK");
+            click = false;
+        }
+        else {
             putDataMapRequest.getDataMap().putString("TYPE", type);
         }
         putDataMapRequest.getDataMap().putFloat("x", x);
