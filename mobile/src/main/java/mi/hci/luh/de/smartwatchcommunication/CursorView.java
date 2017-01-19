@@ -89,8 +89,8 @@ public class CursorView extends View {
         Log.d("canvasWidth", String.format("canvaswidth: %d", this.getWidth()));
 
 
-        int x_margin = (int) (x_step * 0.1);
-        int y_margin = (int) (y_step * 0.1);
+        int x_margin = (int) (y_step * 0.05);
+        int y_margin = (int) (y_step * 0.05);
 
         for( int x = 0; x <= canvas.getWidth(); x+=x_step) {
             for (int y = 0; y <= canvas.getHeight(); y+=y_step) {
