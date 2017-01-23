@@ -12,6 +12,7 @@ import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -40,15 +41,12 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     private float[] history = new float[2];
 
-    private float mYaw;
-
-    private float mPitch;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setAmbientEnabled();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         mContainerView = (BoxInsetLayout) findViewById(R.id.container);
 
@@ -122,7 +120,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
     }
 
-    public void sendSensorData(String type, float x, float y, float[] rotMatirx) {
+    public void sendSensorData(String type, float x, float y, float roll) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
         if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
@@ -137,7 +135,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
         putDataMapRequest.getDataMap().putFloat("x", x);
         putDataMapRequest.getDataMap().putFloat("y", y);
-        putDataMapRequest.getDataMap().putFloatArray("rot", rotMatirx);
+        putDataMapRequest.getDataMap().putFloat("roll", roll);
 
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         Wearable.DataApi.putDataItem(mGoogleApiClient, request);
@@ -248,8 +246,9 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                     SensorManager.AXIS_Z, mRotationMatrix);
             SensorManager.getOrientation(mRotationMatrix, mOrientation);
 
-            mPitch = (float) Math.toDegrees(mOrientation[1]); // Pitch is the rotations about the y axis  (between -90 and 90 deg);
-            mYaw = (float) Math.toDegrees(mOrientation[0]); // Yaw is the rotation about the z axis (between -180 and 180).
+            float mPitch = (float) Math.toDegrees(mOrientation[1]);
+            float mYaw = (float) Math.toDegrees(mOrientation[0]);
+            float mRoll = (float) Math.toDegrees(mOrientation[2]);
 
             float yDelta = history[0] - mPitch;
             float zDelta = history[1] - mYaw; // Currently unused
@@ -278,7 +277,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 sensorY.setText("y: " + String.format("%.3f", y));
                 sensorZ.setText("z: " + String.format("%.3f", z));
 
-                sendSensorData("GAME_ROTATION", x/360, y/90, mRotationMatrix);
+                sendSensorData("GAME_ROTATION", x/360, y/90, mRoll);
                 lastSendRotationData = millis;
             }
 

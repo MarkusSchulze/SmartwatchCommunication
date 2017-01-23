@@ -50,16 +50,15 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastDataType = dataMapItem.getDataMap().getString("TYPE");
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
-                        //lastData[2] = dataMapItem.getDataMap().getFloat("z");
+                        lastData[2] = dataMapItem.getDataMap().getFloat("roll");
+
                         // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
                         // des Sensors zum Startwert des Cursors
                         if (lastDataType.contentEquals("RESET")) {
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
-                            //calibration[2] = lastData[2];
-                        }
-
-                        else {
+                            calibration[2] = lastData[2];
+                        } else {
                             SensorDataChanged();
                         }
                     }
@@ -75,7 +74,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.a_showcursor);
+        setContentView(R.layout.a_cursor);
 
         //Timer starten
         startTime = System.currentTimeMillis();
@@ -96,28 +95,25 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
         calibration[0] = 0.0f;
         calibration[1] = 0.0f;
-        //calibration[2] = 0.0f;
     }
 
     public void SensorDataChanged() {
 
         if (lastDataType.contentEquals("CLICK")) {
             boolean found = false;
-            for(Rectangle r : cursorView.rectangles) {
-                if(r.find(this.pointX, this.pointY) != null) {
+            for (Rectangle r : cursorView.rectangles) {
+                if (r.find(this.pointX, this.pointY) != null) {
                     found = true;
                     this.cursorView.setBg(r.getColor());
                 }
             }
-            if( found ) {
+            if (found) {
                 Log.d("Found", String.format("Rectangle found! "));
-            }
-            else {
+            } else {
                 Log.d("Not Found", String.format("Rectangle not found! "));
 
             }
-        }
-        else if (lastDataType.contentEquals("GAME_ROTATION")) {
+        } else if (lastDataType.contentEquals("GAME_ROTATION")) {
 
             int width = cursorView.getWidth();
             int height = cursorView.getHeight();
@@ -147,7 +143,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             pointX = horizontal;
             pointY = vertical;
 
-            cursorView.setCursor(horizontal, vertical, width, height);
+            cursorView.setCursor(horizontal, vertical, width, height, lastData[2]);
             cursorView.invalidate();
         }
     }
