@@ -22,10 +22,12 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 public class MainActivity extends WearableActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, SensorEventListener {
 
+    private static final float NS2S = 1.0f / 1000000000.0f;
     long lastSendRotationData = 0;
     long lastSendAccData = 0;
     private BoxInsetLayout mContainerView;
@@ -34,12 +36,28 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     private Sensor gameRotationSensor;
     private Sensor linearAccSensor;
     private GoogleApiClient mGoogleApiClient;
+    private float timestamp;
 
     private float[] mRotationMatrix = new float[16];
 
     private float[] mOrientation = new float[9];
 
     private float[] history = new float[2];
+
+    private float mYaw;
+    private float mPitch;
+    private float mRoll;
+
+    private float x = 0.000f;
+    private float y = 0.000f;
+    private Timestamp lastLinAccTime;
+    private float[] acc;
+    private float accY = 0.000f;
+    private float accZ = 0.000f;
+    private float Velocity = 0.000f;
+    private float distX = 0.000f;
+    private float dT = 0;
+    private double omegaMagnitude;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,12 +73,14 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         for (Sensor type : deviceSensors) {
             Log.e("sensors", type.getStringType());
         }
-        gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR); //works
-        sensorManager.registerListener(this, gameRotationSensor, SensorManager.SENSOR_DELAY_FASTEST);
-        linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION); //works
-        sensorManager.registerListener(this, linearAccSensor, SensorManager.SENSOR_DELAY_FASTEST);
-        Sensor gynoscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorManager.registerListener(this, gynoscopeSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        gameRotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
+        sensorManager.registerListener(this, gameRotationSensor, 20000);  // 20000 mikro sec. ~ 50Hz ~ SENSOR_DELAY_GAME
+
+        linearAccSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+        sensorManager.registerListener(this, linearAccSensor, 200); // 20000 mikro sec. ~ 50Hz ~ SENSOR_DELAY_GAME
+
+        //Sensor gynoscopeSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        //sensorManager.registerListener(this, gynoscopeSensor, SensorManager.SENSOR_DELAY_FASTEST);
 
         sensorX = (TextView) findViewById(R.id.sensor_X);
         sensorY = (TextView) findViewById(R.id.sensor_Y);
@@ -120,7 +140,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
     }
 
-    public void sendSensorData(String type, float x, float y, float roll) {
+    public void sendSensorData(String type, float x, float y, float[] acc, float[] rotMatirx, float roll) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
         if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
@@ -135,6 +155,8 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
         putDataMapRequest.getDataMap().putFloat("x", x);
         putDataMapRequest.getDataMap().putFloat("y", y);
+        putDataMapRequest.getDataMap().putFloatArray("acc", acc);
+        putDataMapRequest.getDataMap().putFloatArray("rot", rotMatirx);
         putDataMapRequest.getDataMap().putFloat("roll", roll);
 
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
@@ -171,72 +193,6 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             // Normierung von Werten zwischen -1 und 1 auf 0 bis 2
             // Dritter Versuch
 
-            /*double grad;
-            double x1 = 0;
-            double x2 = 0;
-            if (v[2] > 0 && v[3] > 0) {
-                x1 = 1 - v[2];
-                x2 = v[3];
-            } else if (v[2] < 0 && v[3] > 0) {
-                x1 = -v[2] + 1;
-                x2 = (1 - v[3]) + 1;
-            } else if (v[2] < 0 && v[3] < 0) {
-                x1 = v[2] + 1;
-                x2 = -v[3];
-            } else if (v[2] > 0 && v[3] < 0) {
-                x1 = v[2] + 1;
-                x2 = v[3] + 2;
-            }
-            grad = (x1 + x2) / 2;*/
-
-            // Erster Versuch
-//            double grad = 0;
-//            if (v[2] > 0 && v[3] > 0) {
-//
-//                grad = v[3];
-//
-//            } else if (v[2] < 0 && v[3] > 0) {
-//
-//                grad = (1 - v[3]) + 1;
-//
-//            } else if (v[2] < 0 && v[3] < 0) {
-//                grad = -v[3];
-//            } else if (v[2] > 0 && v[3] < 0) {
-//                grad = v[3] + 2;
-//            }
-
-            //Zweiter Versuch
-//            double grad = 0;
-//            if (v[2] > 0 && v[3] > 0) {
-//                if (v[3] > 0.5) {
-//                    grad = 1 - v[2];
-//                } else {
-//                    grad = v[3];
-//                }
-//            } else if (v[2] < 0 && v[3] > 0) {
-//                if (v[3] > 0.5) {
-//                    grad = -v[2] + 1;
-//                } else {
-//                    grad = (1 - v[3]) + 1;
-//                }
-//            } else if (v[2] < 0 && v[3] < 0) {
-//                if (v[3] < -0.5) {
-//                    grad = v[2] + 1;
-//                } else {
-//                    grad = -v[3];
-//                }
-//            } else if (v[2] > 0 && v[3] < 0) {
-//                if (v[3] < -0.5) {
-//                    grad = v[2] + 1;
-//                } else {
-//                    grad = v[3] + 2;
-//                }
-//            }
-
-            /*sensorX.setText("x: " + String.format("%.3f", v[3]));
-            sensorY.setText("y: " + String.format("%.3f", grad * 0.5));
-            sensorZ.setText("z: " + String.format("%.3f", v[2]));*/
-
             //Log.d("gettinDataRight", v[3] + " - " + String.valueOf(grad * 0.5) + " - " + v[2]);
 
 
@@ -246,9 +202,9 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                     SensorManager.AXIS_Z, mRotationMatrix);
             SensorManager.getOrientation(mRotationMatrix, mOrientation);
 
-            float mPitch = (float) Math.toDegrees(mOrientation[1]);
-            float mYaw = (float) Math.toDegrees(mOrientation[0]);
-            float mRoll = (float) Math.toDegrees(mOrientation[2]);
+            mPitch = (float) Math.toDegrees(mOrientation[1]); // Pitch is the rotations about the y axis  (between -90 and 90 deg);
+            mYaw = (float) Math.toDegrees(mOrientation[0]); // Yaw is the rotation about the z axis (between -180 and 180).
+            mRoll = (float) Math.toDegrees(mOrientation[2]);
 
             float yDelta = history[0] - mPitch;
             float zDelta = history[1] - mYaw; // Currently unused
@@ -269,23 +225,28 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 float y = v[1];
                 float z = v[2];*/
 
-                float x = mYaw;
-                float y = mPitch;
-                float z = 0.0f;
+                x = mYaw;
+                y = mPitch;
+                //z = 0.0f;
 
                 sensorX.setText("x: " + String.format("%.3f", x));
                 sensorY.setText("y: " + String.format("%.3f", y));
-                sensorZ.setText("z: " + String.format("%.3f", z));
+                sensorZ.setText("z: " + String.format("%.3f", acc[0]));
 
-                sendSensorData("GAME_ROTATION", x/360, y/90, mRoll);
+                sendSensorData("GAME_ROTATION", x / 360, y / 90, acc, mRotationMatrix, mRoll);
                 lastSendRotationData = millis;
             }
 
         } else if (event.sensor == linearAccSensor) {
-            if (millis - lastSendAccData > 100) {
-                //sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
-                lastSendAccData = millis;
-            }
+            //if (millis - lastSendAccData > 100) {
+            //sendSensorData("LINEAR_ACC", v[0], v[1], v[2]);
+
+            acc = event.values;
+            sendSensorData("GAME_ROTATION", x / 360, y / 90, acc, mRotationMatrix, mRoll);
+
+            //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
+            //lastSendAccData = millis;
+            //}
         }
     }
 
@@ -294,8 +255,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     }
 
-    private float mod(float x, float y)
-    {
+    private float mod(float x, float y) {
         float result = x % y;
         if (result < 0)
             result += y;
