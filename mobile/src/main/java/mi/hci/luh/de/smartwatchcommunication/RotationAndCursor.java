@@ -16,15 +16,16 @@ package mi.hci.luh.de.smartwatchcommunication;
  */
 
 import android.app.Activity;
-import android.opengl.GLES30;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.view.WindowManager;
-import android.widget.LinearLayout;
 
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.ConnectionResult;
@@ -42,8 +43,17 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+/**
+ * Wrapper activity demonstrating the use of the new
+ * {@link SensorEvent#values rotation vector sensor}
+ * ({@link Sensor#TYPE_ROTATION_VECTOR TYPE_ROTATION_VECTOR}).
+ *
+ * @see Sensor
+ * @see SensorEvent
+ * @see SensorManager
+ */
 public class RotationAndCursor extends Activity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
-    private SurfaceView mGLSurfaceView;
+    private GLSurfaceView mGLSurfaceView;
     private MyRenderer mRenderer;
 
     private String lastDataType;
@@ -53,15 +63,13 @@ public class RotationAndCursor extends Activity implements GoogleApiClient.Conne
     private GoogleApiClient mGoogleApiClient;
     private Handler timerHandler = new Handler();
     private long startTime = 0;
-    private float horizontal;
-    private int vertical;
-    private float matrixTransition;
-    private CursorView cursorView;
 
 
     Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
+
+            //txt_output.setText(String.format("%d:%02d", minutes, seconds));
 
             PendingResult<DataItemBuffer> results = Wearable.DataApi.getDataItems(mGoogleApiClient);
             results.setResultCallback(new ResultCallback<DataItemBuffer>() {
@@ -75,18 +83,13 @@ public class RotationAndCursor extends Activity implements GoogleApiClient.Conne
                         mRotationMatrix = dataMapItem.getDataMap().getFloatArray("rot");
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
-                        lastData[2] = dataMapItem.getDataMap().getFloat("z");
                         // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
                         // des Sensors zum Startwert des Cursors
+                        Log.d("test", String.format("%f", mRotationMatrix[0]));
                         if (lastDataType.contentEquals("RESET")) {
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
-                        } else {
-                            SensorDataChanged();
                         }
-
-
-                        //Log.d("test", String.format("%f", mRotationMatrix[0]));
                     }
 
                     dataItems.release();
@@ -100,7 +103,7 @@ public class RotationAndCursor extends Activity implements GoogleApiClient.Conne
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // Get an instance of the SensorManager
 
         //Timer starten
         startTime = System.currentTimeMillis();
@@ -109,13 +112,9 @@ public class RotationAndCursor extends Activity implements GoogleApiClient.Conne
         // Create our Preview view and set it as the content of our
         // Activity
         mRenderer = new MyRenderer();
-        mGLSurfaceView = new SurfaceView(this);
+        mGLSurfaceView = new GLSurfaceView(this);
         mGLSurfaceView.setRenderer(mRenderer);
         setContentView(mGLSurfaceView);
-
-//        LinearLayout rect = (LinearLayout) findViewById(R.id.rect);
-//        cursorView = new CursorView(this);
-//        rect.addView(cursorView);
 
         // Init Google Service API
         mGoogleApiClient = new GoogleApiClient.Builder(this)
@@ -127,268 +126,136 @@ public class RotationAndCursor extends Activity implements GoogleApiClient.Conne
 
         calibration[0] = 0.0f;
         calibration[1] = 0.0f;
-        lastData[0] = 0.0f;
-        lastData[1] = 0.0f;
     }
-
-    public void SensorDataChanged() {
-        int width = mGLSurfaceView.getWidth();
-        int height = mGLSurfaceView.getHeight();
-//        if (lastDataType.contentEquals("CLICK")) {
-//            boolean found = false;
-//            for(Rectangle r : cursorView.rectangles) {
-//                if(r.find((int)horizontal, this.vertical) != null) {
-//                    found = true;
-//                    this.cursorView.setBg(r.getColor());
-//                }
-//            }
-//            if( found ) {
-//                Log.d("Found", String.format("Rectangle found! "));
-//            }
-//            else {
-//                Log.d("Not Found", String.format("Rectangle not found! "));
-//
-//            }
-//        }
-        if (lastDataType.contentEquals("GAME_ROTATION")) {
-
-            //Umrechnung an die Kalibrierung
-            vertical = (int) (lastData[1] * height) + height / 2;
-            horizontal = ((lastData[0] - calibration[0]) * width + width / 2);
-            if (horizontal > width) {
-                horizontal -= width;
-            } else if (horizontal < 0) {
-                horizontal += width;
-            }
-
-            //Cursor bleibt im Bild auch wenn man außerhalb zeigt
-            if (vertical > height) {
-                vertical = height;
-            }
-            if (vertical < 1) {
-                vertical = 1;
-            }
-            if (horizontal > width) {
-                horizontal = width;
-            }
-            if (horizontal < 1) {
-                horizontal = 1;
-            }
-
-            //Umrechnen des Wertebereichs von Bildschirmgröße auf -20 bis +20
-            matrixTransition = (horizontal / width * 40) - 20;
-        }
-    }
-
     @Override
     protected void onResume() {
         // Ideally a game should implement onResume() and onPause()
         // to take appropriate action when the activity looses focus
         super.onResume();
+        mRenderer.start();
         mGLSurfaceView.onResume();
     }
-
     @Override
     protected void onPause() {
         // Ideally a game should implement onResume() and onPause()
         // to take appropriate action when the activity looses focus
         super.onPause();
+        mRenderer.stop();
         mGLSurfaceView.onPause();
         timerHandler.removeCallbacks(timerRunnable);
     }
 
-//    class MyRenderer implements GLSurfaceView.Renderer {
-//        private Cube mCube;
-//        private Square square;
-//
-//        MyRenderer() {
-//            square = new Square();
-//
-//            mCube = new Cube();
-//            // initialize the rotation matrix to identity
-//            mRotationMatrix[0] = 1;
-//            mRotationMatrix[4] = 1;
-//            mRotationMatrix[8] = 1;
-//            mRotationMatrix[12] = 1;
-//        }
-//
-//        public void onDrawFrame(GL10 gl) {
-//
-//
-//            // clear screen
-//            gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
-//            // set-up modelview matrix
-//            gl.glMatrixMode(GL10.GL_MODELVIEW);
-//            gl.glLoadIdentity();
-//            gl.glTranslatef(matrixTransition, lastData[1] * 10, -8.0f);
-//            gl.glMultMatrixf(mRotationMatrix, 0);
-//            // draw our object
-//            gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
-//            gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
-//
-//            mCube.draw(gl);
-//
-//            square.setVerticesAndDraw(0.8f, gl, (byte) 255);
-//
-////            square.setVerticesAndDraw(0.7f, gl, (byte) 150);
-////            square.setVerticesAndDraw(0.6f, gl, (byte) 100);
-////            square.setVerticesAndDraw(0.5f, gl, (byte) 80);
-////            square.setVerticesAndDraw(0.4f, gl, (byte) 50);
-//
-//
-//        }
-//
-//        public void onSurfaceChanged(GL10 gl, int width, int height) {
-//            // set view-port
-//            gl.glViewport(0, 0, width, height);
-//            // set projection matrix
-//            float ratio = (float) width / height;
-//            gl.glMatrixMode(GL10.GL_PROJECTION);
-//            gl.glLoadIdentity();
-//            gl.glFrustumf(-ratio, ratio, -1, 1, 1, 10);
-//        }
-//
-//        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-//            // dither is enabled by default, we don't need it
-//            gl.glDisable(GL10.GL_DITHER);
-//            // clear screen in white
-//            gl.glClearColor(1, 1, 1, 1);
-//        }
-//
-//        class Cube {
-//            // initialize our cube
-//            private FloatBuffer mVertexBuffer;
-//            private FloatBuffer mColorBuffer;
-//            private ByteBuffer mIndexBuffer;
-//
-//            Cube() {
-//                final float vertices[] = {
-//                        -1, -1, -1, 1, -1, -1,
-//                        1, 1, -1, -1, 1, -1,
-//                        -1, -1, 1, 1, -1, 1,
-//                        1, 1, 1, -1, 1, 1,
-//                };
-//                final float colors[] = {
-//                        0, 0, 0, 1, 1, 0, 0, 1,
-//                        1, 1, 0, 1, 0, 1, 0, 1,
-//                        0, 0, 1, 1, 1, 0, 1, 1,
-//                        1, 1, 1, 1, 0, 1, 1, 1,
-//                };
-//                final byte indices[] = {
-//                        0, 4, 5, 0, 5, 1,
-//                        1, 5, 6, 1, 6, 2,
-//                        2, 6, 7, 2, 7, 3,
-//                        3, 7, 4, 3, 4, 0,
-//                        4, 7, 6, 4, 6, 5,
-//                        3, 0, 1, 3, 1, 2
-//                };
-//                ByteBuffer vbb = ByteBuffer.allocateDirect(vertices.length * 4);
-//                vbb.order(ByteOrder.nativeOrder());
-//                mVertexBuffer = vbb.asFloatBuffer();
-//                mVertexBuffer.put(vertices);
-//                mVertexBuffer.position(0);
-//                ByteBuffer cbb = ByteBuffer.allocateDirect(colors.length * 4);
-//                cbb.order(ByteOrder.nativeOrder());
-//                mColorBuffer = cbb.asFloatBuffer();
-//                mColorBuffer.put(colors);
-//                mColorBuffer.position(0);
-//                mIndexBuffer = ByteBuffer.allocateDirect(indices.length);
-//                mIndexBuffer.put(indices);
-//                mIndexBuffer.position(0);
-//            }
-//
-//            void draw(GL10 gl) {
-//                gl.glEnable(GL10.GL_CULL_FACE);
-//                gl.glFrontFace(GL10.GL_CW);
-//                gl.glShadeModel(GL10.GL_SMOOTH);
-//                gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mVertexBuffer);
-//                gl.glColorPointer(4, GL10.GL_FLOAT, 0, mColorBuffer);
-//                gl.glDrawElements(GL10.GL_TRIANGLES, 36, GL10.GL_UNSIGNED_BYTE, mIndexBuffer);
-//            }
-//        }
-//    }
-
-    class MyRenderer implements GLSurfaceView.Renderer{
-        @Override
-        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-            gl.glClearColor(1.0f, 1.0f, 0.0f, 0.0f);
+    class MyRenderer implements GLSurfaceView.Renderer, SensorEventListener {
+        private Cube mCube;
+        //private Sensor mRotationVectorSensor;
+        //private final float[] mRotationMatrix = new float[16];
+        MyRenderer() {
+            // find the rotation-vector sensor
+            //mRotationVectorSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+            mCube = new Cube();
+            // initialize the rotation matrix to identity
+            mRotationMatrix[ 0] = 1;
+            mRotationMatrix[ 4] = 1;
+            mRotationMatrix[ 8] = 1;
+            mRotationMatrix[12] = 1;
+        }
+        void start() {
+            // enable our sensor when the activity is resumed, ask for
+            // 10 ms updates.
+            //mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
+        }
+        void stop() {
+            // make sure to turn our sensor off when the activity is paused
+            //mSensorManager.unregisterListener(this);
         }
 
-        @Override
-        public void onSurfaceChanged(GL10 gl, int width, int height) {
-            gl.glViewport(0, 0, width, height);
-            float aspect = (float)width / height;
-            gl.glMatrixMode(GL10.GL_PROJECTION);
-            gl.glLoadIdentity();
-            gl.glFrustumf(-aspect, aspect, -1.0f, 1.0f, 1.0f, 10.0f);
-        }
-
-        @Override
         public void onDrawFrame(GL10 gl) {
-            gl.glClear(GL10.GL_COLOR_BUFFER_BIT | GL10.GL_DEPTH_BUFFER_BIT);
-
-            Square square=new Square();
-            square.setVerticesAndDraw(0.8f, gl, (byte) 255);
-            square.setVerticesAndDraw(0.7f, gl, (byte) 150);
-            square.setVerticesAndDraw(0.6f, gl, (byte) 100);
-            square.setVerticesAndDraw(0.5f, gl, (byte) 80);
-            square.setVerticesAndDraw(0.4f, gl, (byte) 50);
-        }
-    }
-
-
-    class Square {
-
-        public void setVerticesAndDraw(Float value, GL10 gl, byte color) {
-            FloatBuffer vertexbuffer;
-            ByteBuffer indicesBuffer;
-            ByteBuffer mColorBuffer;
-
-            byte indices[] = {0, 1, 2, 0, 2, 3};
-
-            float vetices[] = {
-                    -value, value, 0.0f,
-                    value, value, 0.0f,
-                    value, -value, 0.0f,
-                    -value, -value, 0.0f
-            };
-
-            byte colors[] = {
-                    color, color, 0, color,
-                    0, color, color, color,
-                    0, 0, 0, color,
-                    color, 0, color, 1
-            };
-
-
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(vetices.length * 4);
-            byteBuffer.order(ByteOrder.nativeOrder());
-            vertexbuffer = byteBuffer.asFloatBuffer();
-            vertexbuffer.put(vetices);
-            vertexbuffer.position(0);
-
-            indicesBuffer = ByteBuffer.allocateDirect(indices.length);
-            indicesBuffer.put(indices);
-            indicesBuffer.position(0);
-
-            mColorBuffer = ByteBuffer.allocateDirect(colors.length);
-            mColorBuffer.put(colors);
-            mColorBuffer.position(0);
-
-
+            // clear screen
+            gl.glClear(GL10.GL_COLOR_BUFFER_BIT);
+            // set-up modelview matrix
+            gl.glMatrixMode(GL10.GL_MODELVIEW);
+            gl.glLoadIdentity();
+            gl.glTranslatef(0, 0, -3.0f);
+            gl.glMultMatrixf(mRotationMatrix, 0);
+            // draw our object
             gl.glEnableClientState(GL10.GL_VERTEX_ARRAY);
             gl.glEnableClientState(GL10.GL_COLOR_ARRAY);
+            mCube.draw(gl);
+        }
+        public void onSurfaceChanged(GL10 gl, int width, int height) {
+            // set view-port
+            // 1 und 2 ändern die Position des Würfels
+            gl.glViewport(300, 200, width, height);
+            // set projection matrix
+            float ratio = (float) width / height;
+            gl.glMatrixMode(GL10.GL_PROJECTION);
+            gl.glLoadIdentity();
+            gl.glFrustumf(-ratio, ratio, -1, 1, 1, 10);
+        }
+        public void onSurfaceCreated(GL10 gl, EGLConfig config) {
+            // dither is enabled by default, we don't need it
+            gl.glDisable(GL10.GL_DITHER);
+            // clear screen in white
+            gl.glClearColor(1,1,1,1);
+        }
+        class Cube {
+            // initialize our cube
+            private FloatBuffer mVertexBuffer;
+            private FloatBuffer mColorBuffer;
+            private ByteBuffer  mIndexBuffer;
+            Cube() {
+                final float vertices[] = {
+                        -1, -1, -1,		 1, -1, -1,
+                        1,  1, -1,	    -1,  1, -1,
+                        -1, -1,  1,      1, -1,  1,
+                        1,  1,  1,     -1,  1,  1,
+                };
+                final float colors[] = {
+                        0,  0,  0,  1,  1,  0,  0,  1,
+                        1,  1,  0,  1,  0,  1,  0,  1,
+                        0,  0,  1,  1,  1,  0,  1,  1,
+                        1,  1,  1,  1,  0,  1,  1,  1,
+                };
+                final byte indices[] = {
+                        0, 4, 5,    0, 5, 1,
+                        1, 5, 6,    1, 6, 2,
+                        2, 6, 7,    2, 7, 3,
+                        3, 7, 4,    3, 4, 0,
+                        4, 7, 6,    4, 6, 5,
+                        3, 0, 1,    3, 1, 2
+                };
+                ByteBuffer vbb = ByteBuffer.allocateDirect(vertices.length*4);
+                vbb.order(ByteOrder.nativeOrder());
+                mVertexBuffer = vbb.asFloatBuffer();
+                mVertexBuffer.put(vertices);
+                mVertexBuffer.position(0);
+                ByteBuffer cbb = ByteBuffer.allocateDirect(colors.length*4);
+                cbb.order(ByteOrder.nativeOrder());
+                mColorBuffer = cbb.asFloatBuffer();
+                mColorBuffer.put(colors);
+                mColorBuffer.position(0);
+                mIndexBuffer = ByteBuffer.allocateDirect(indices.length);
+                mIndexBuffer.put(indices);
+                mIndexBuffer.position(0);
+            }
+            void draw(GL10 gl) {
+                gl.glEnable(GL10.GL_CULL_FACE);
+                gl.glFrontFace(GL10.GL_CW);
+                gl.glShadeModel(GL10.GL_SMOOTH);
+                gl.glVertexPointer(3, GL10.GL_FLOAT, 0, mVertexBuffer);
+                gl.glColorPointer(4, GL10.GL_FLOAT, 0, mColorBuffer);
+                gl.glDrawElements(GL10.GL_TRIANGLES, 36, GL10.GL_UNSIGNED_BYTE, mIndexBuffer);
+            }
+        }
 
-            gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vertexbuffer);
-            gl.glColorPointer(4, GL10.GL_UNSIGNED_BYTE, 0, mColorBuffer);
-
-            gl.glDrawElements(GL10.GL_TRIANGLES, indices.length, GL10.GL_UNSIGNED_BYTE, indicesBuffer);
-            gl.glDisableClientState(GL10.GL_VERTEX_ARRAY);
+        @Override
+        public void onSensorChanged(SensorEvent event) {
 
         }
+
+        public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        }
     }
-
-
 
     @Override
     public void onConnected(@Nullable Bundle bundle) {

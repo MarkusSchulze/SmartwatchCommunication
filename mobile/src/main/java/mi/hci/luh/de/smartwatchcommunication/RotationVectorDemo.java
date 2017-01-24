@@ -389,6 +389,7 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
 
         public void onSurfaceChanged(GL10 gl, int width, int height) {
             // set view-port
+            // 1 und 2 ändern die Position des Würfels
             gl.glViewport(0, 0, width, height);
             // set projection matrix
             float ratio = (float) width / height;
