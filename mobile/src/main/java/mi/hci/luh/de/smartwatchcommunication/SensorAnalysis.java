@@ -1,5 +1,6 @@
 package mi.hci.luh.de.smartwatchcommunication;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.annotation.NonNull;
@@ -113,6 +114,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 Log.d("Not Found", String.format("Rectangle not found! "));
 
             }
+        } else if (lastDataType.contentEquals("LAYOUT")) {
+            Intent i = new Intent(this, RotationVectorDemo.class);
+
+            startActivity(i);
         } else if (lastDataType.contentEquals("GAME_ROTATION")) {
 
             int width = cursorView.getWidth();

@@ -16,6 +16,7 @@ package mi.hci.luh.de.smartwatchcommunication;
  */
 
 import android.app.Activity;
+import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -97,6 +98,8 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
 
                         lastDataType = dataMapItem.getDataMap().getString("TYPE");
                         mRotationMatrix = dataMapItem.getDataMap().getFloatArray("rot");
+                        acc = dataMapItem.getDataMap().getFloatArray("acc");
+
                         // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
                         // des Sensors zum Startwert des Cursors
                         //mRotationMatrix = lastData;
@@ -197,63 +200,8 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
                         //}
                         */
 
-                        acc = dataMapItem.getDataMap().getFloatArray("acc");
+                        SensorDataChanged();
 
-                        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-                        if (lastLinAccTime == null) {
-                            lastLinAccTime = currentTime;
-                        }
-                        double dT = (currentTime.getTime() - lastLinAccTime.getTime());
-
-                        // not normalized yet.
-                        accX = acc[0];
-                        accY = acc[1];
-                        accZ = acc[2];
-
-                        omegaMagnitude = Math.sqrt(accX * accX + accY * accY + accZ * accZ);
-
-                        // Normalize, if it's big enough to get the axis
-                        if (omegaMagnitude > 0.1) {
-                            accX /= omegaMagnitude;
-                            //accY /= omegaMagnitude;
-                            //accZ /= omegaMagnitude;
-                            //Log.d("linAcc", String.format("%f", (float) omegaMagnitude));
-                            //Log.d("*-*accX*-*", String.format("%.3f", accX));
-
-                            /*if ((accX - accX_old) > 0) {
-                                direction = 1;
-                            } else if ((accX - accX_old) == 0) {
-                                direction = 0;
-                            } else {
-                                direction = -1;
-                            }*/
-
-                            //Velocity = 0;
-                            //if (accX > 0.05) {
-
-                            //accX += accX;
-                            Velocity = accX * dT;// + Velocity; // mm/s
-                            direction = (int) Math.signum(Velocity);
-
-                            double dT_square = Math.pow(dT, 2.0);
-                            distX -= -(float) Velocity * dT / 50000;
-
-                            //distX = (float) (0.5 * dT_square * accX + dT * Velocity + distX) /1000; // mm
-                            //}
-
-                            Log.d("distX----", String.format("%f", distX));
-
-                            accX_old = accX;
-                        }
-
-                        //distX = (distX % 6) - 1.4f;
-                        if (distX < -10f) {
-                            distX = -10f;
-                        } else if (distX > -2f) {
-                            distX = -2f;
-                        }
-
-                        lastLinAccTime = currentTime;
                     }
 
                     dataItems.release();
@@ -264,11 +212,70 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
         }
     };
 
-    /*public void SensorDataChanged() {
+    public void SensorDataChanged() {
         if (lastDataType.contentEquals("GAME_ROTATION")) {
 
+            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+            if (lastLinAccTime == null) {
+                lastLinAccTime = currentTime;
+            }
+            double dT = (currentTime.getTime() - lastLinAccTime.getTime());
+
+            // not normalized yet.
+            accX = acc[0];
+            accY = acc[1];
+            accZ = acc[2];
+
+            omegaMagnitude = Math.sqrt(accX * accX + accY * accY + accZ * accZ);
+
+            // Normalize, if it's big enough to get the axis
+            if (omegaMagnitude > 0.1) {
+                accX /= omegaMagnitude;
+                //accY /= omegaMagnitude;
+                //accZ /= omegaMagnitude;
+                //Log.d("linAcc", String.format("%f", (float) omegaMagnitude));
+                //Log.d("*-*accX*-*", String.format("%.3f", accX));
+
+                            /*if ((accX - accX_old) > 0) {
+                                direction = 1;
+                            } else if ((accX - accX_old) == 0) {
+                                direction = 0;
+                            } else {
+                                direction = -1;
+                            }*/
+
+                //Velocity = 0;
+                //if (accX > 0.05) {
+
+                //accX += accX;
+                Velocity = accX * dT;// + Velocity; // mm/s
+                direction = (int) Math.signum(Velocity);
+
+                double dT_square = Math.pow(dT, 2.0);
+                distX -= -(float) Velocity * dT / 50000;
+
+                //distX = (float) (0.5 * dT_square * accX + dT * Velocity + distX) /1000; // mm
+                //}
+
+                Log.d("distX----", String.format("%f", distX));
+
+                accX_old = accX;
+            }
+
+            //distX = (distX % 6) - 1.4f;
+            if (distX < -10f) {
+                distX = -10f;
+            } else if (distX > -2f) {
+                distX = -2f;
+            }
+
+            lastLinAccTime = currentTime;
+        }if (lastDataType.contentEquals("LAYOUT")) {
+            Intent i = new Intent(this, SensorAnalysis.class);
+
+            startActivity(i);
         }
-    }*/
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
