@@ -53,6 +53,13 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
                         lastData[2] = dataMapItem.getDataMap().getFloat("roll");
 
+                        //Startwerte bestimmen
+                        if (calibration[0]==0){
+                            calibration[0] = lastData[0];
+                            calibration[1] = lastData[1];
+                            calibration[2] = lastData[2];
+                        }
+
                         // wenn der reset Button auf der Uhr gedrückt wird, wird der aktuelle Wert
                         // des Sensors zum Startwert des Cursors
                         if (lastDataType.contentEquals("RESET")) {
@@ -125,7 +132,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
             //Umrechnung an die Kalibrierung
             int vertical = (int) (lastData[1] * height) + height / 2;
-            int horizontal = (int) ((lastData[0] - calibration[0]) * width + width / 2);
+            int horizontal = (int) ((lastData[0] - calibration[0])*4 * width + width / 2);
             if (horizontal > width) {
                 horizontal -= width;
             } else if (horizontal < 0) {

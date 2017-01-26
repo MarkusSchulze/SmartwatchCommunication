@@ -30,7 +30,7 @@ public class CursorView extends View {
         super(context);
         createBubble();
 
-        rectangles = new ArrayList<Rectangle>();
+        rectangles = new ArrayList<>();
         this.bg = Color.parseColor("#BDBDBD");
 
     }

@@ -207,7 +207,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
             if (millis - lastSendAccData > 100) {
 
                 acc = event.values;
-                sendSensorData("GAME_ROTATION", mYaw / 360, mPitch / 90, acc, mRotationMatrix, mRoll);
+                sendSensorData("GAME_ROTATION", (mYaw / 360), mPitch / 90, acc, mRotationMatrix, mRoll);
 
                 //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
                 lastSendAccData = millis;
