@@ -16,10 +16,10 @@ public class MainActivity extends Activity {
 
         //HIER einfach die activity wählen, die man starten möchte Auswahl im Moment
         // RotationVectorDemo oder SensorAnalysis
-        //Intent i = new Intent(this, RotationVectorDemo.class);
-        Intent i = new Intent(this, SensorAnalysis.class);
+        //Intent i = new Intent(this, SensorAnalysis.class);
+        Intent i = new Intent(this, RotationVectorDemo.class);
+        //Intent i = new Intent(this, RotationAndCursor.class);
 
         startActivity(i);
     }
 }
-

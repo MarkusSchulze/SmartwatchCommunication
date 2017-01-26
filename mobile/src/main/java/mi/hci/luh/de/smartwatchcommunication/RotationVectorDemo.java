@@ -213,7 +213,7 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
                         omegaMagnitude = Math.sqrt(accX * accX + accY * accY + accZ * accZ);
 
                         // Normalize, if it's big enough to get the axis
-                        if (omegaMagnitude > 0.2) {
+                        if (omegaMagnitude > 0.1) {
                             accX /= omegaMagnitude;
                             //accY /= omegaMagnitude;
                             //accZ /= omegaMagnitude;
@@ -247,10 +247,10 @@ public class RotationVectorDemo extends Activity implements GoogleApiClient.Conn
                         }
 
                         //distX = (distX % 6) - 1.4f;
-                        if (distX < -7f) {
-                            distX = -7f;
-                        } else if (distX > -1.4f) {
-                            distX = -1.4f;
+                        if (distX < -10f) {
+                            distX = -10f;
+                        } else if (distX > -2f) {
+                            distX = -2f;
                         }
 
                         lastLinAccTime = currentTime;
