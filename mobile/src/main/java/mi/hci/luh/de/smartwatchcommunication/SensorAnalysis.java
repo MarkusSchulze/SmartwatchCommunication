@@ -116,9 +116,9 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                 }
             }
             if (found) {
-                Log.d("Found", String.format("Rectangle found! "));
+                Log.d("Found", "Rectangle found! ");
             } else {
-                Log.d("Not Found", String.format("Rectangle not found! "));
+                Log.d("Not Found", "Rectangle not found! ");
 
             }
         } else if (lastDataType.contentEquals("LAYOUT")) {

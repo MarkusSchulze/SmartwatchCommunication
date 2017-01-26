@@ -117,16 +117,14 @@ public class CursorView extends View {
         for (int x = 0; x <= canvas.getWidth(); x += x_step) {
             for (int y = 0; y <= canvas.getHeight(); y += y_step) {
 
-                int left = x;
-                int top = y;
                 int right = x + x_step;
                 int bottom = y + y_step;
 
                 Rectangle currentRect = new Rectangle();
 
-                currentRect.setTop(top + y_margin / 2);
+                currentRect.setTop(y + y_margin / 2);
                 currentRect.setBottom(bottom - y_margin / 2);
-                currentRect.setLeft(left + x_margin / 2);
+                currentRect.setLeft(x + x_margin / 2);
                 currentRect.setRight(right - x_margin / 2);
                 currentRect.setColor(color);
                 rectangles.add(currentRect);

@@ -173,7 +173,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
     }
 
-    @SuppressLint("DefaultLocale")
+    @SuppressLint({"DefaultLocale", "SetTextI18n"})
     @Override
     public void onSensorChanged(SensorEvent event) {
         long millis = System.currentTimeMillis();
@@ -182,6 +182,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
 
             // see: http://stackoverflow.com/questions/23658572/game-rotation-vector-sensor
             SensorManager.getRotationMatrixFromVector(mRotationMatrix, event.values);
+            //noinspection SuspiciousNameCombination
             SensorManager.remapCoordinateSystem(mRotationMatrix, SensorManager.AXIS_Y,
                     SensorManager.AXIS_Z, mRotationMatrix);
             SensorManager.getOrientation(mRotationMatrix, mOrientation);
