@@ -22,6 +22,7 @@ import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends WearableActivity implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, SensorEventListener {
@@ -44,6 +45,10 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
     private float mRoll;
 
     private float[] acc;
+    private float beschleunigung;
+    private boolean movement;
+    private boolean richtungVorwaerts;
+    private List<Float> lastData = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +81,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         setMiddle.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 reset = true;
+                beschleunigung = 0;
             }
         });
 
@@ -99,6 +105,8 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 .addOnConnectionFailedListener(this)
                 .build();
         mGoogleApiClient.connect();
+
+        lastData.add(0.f);
     }
 
     @Override
@@ -134,7 +142,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         }
     }
 
-    public void sendSensorData(String type, float x, float y, float[] acc, float[] rotMatirx, float roll) {
+    public void sendSensorData(String type, float x, float y, float[] acc, float[] rotMatirx, float roll, float strecke) {
         PutDataMapRequest putDataMapRequest = PutDataMapRequest.create("/SensorData");
         if (reset) {
             putDataMapRequest.getDataMap().putString("TYPE", "RESET");
@@ -153,6 +161,7 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
         putDataMapRequest.getDataMap().putFloatArray("acc", acc);
         putDataMapRequest.getDataMap().putFloatArray("rot", rotMatirx);
         putDataMapRequest.getDataMap().putFloat("roll", roll);
+        putDataMapRequest.getDataMap().putFloat("distance", strecke);
 
         PutDataRequest request = putDataMapRequest.asPutDataRequest();
         Wearable.DataApi.putDataItem(mGoogleApiClient, request);
@@ -200,15 +209,51 @@ public class MainActivity extends WearableActivity implements GoogleApiClient.On
                 sensorY.setText("y: " + String.format("%.3f", mPitch));
                 //sensorZ.setText("z: " + String.format("%.3f", acc));
 
-                sendSensorData("GAME_ROTATION", mYaw / 360, mPitch / 90, acc, mRotationMatrix, mRoll);
+                sendSensorData("GAME_ROTATION", mYaw / 360, mPitch / 90, acc, mRotationMatrix, mRoll, beschleunigung);
                 lastSendRotationData = millis;
             }
 
         } else if (event.sensor == linearAccSensor) {
+            //TODO test
+            float average = 0;
+            lastData.add(event.values[0]);
+
+            for (int i = 0; i < lastData.size(); i++) {
+                average += lastData.get(i);
+            }
+            average /= lastData.size();
+
+            if (event.values[0] > 0.3) {
+                if (movement && richtungVorwaerts) {
+                    beschleunigung += event.values[0];
+                } else if (!movement) {
+                    movement = true;
+                    richtungVorwaerts = true;
+                }
+            } else if (event.values[0] < -0.3) {
+                if (movement && !richtungVorwaerts) {
+                    beschleunigung += event.values[0];
+                } else if (!movement) {
+                    movement = true;
+                    richtungVorwaerts = false;
+                }
+            } else {
+                if (Math.abs(average - event.values[0]) < 0.07) {
+                    movement = false;
+                }
+            }
+
+            ///////////Log.d("besch", String.valueOf(beschleunigung));
+
+
+            if (lastData.size() > 10) {
+                lastData.remove(0);
+            }
+
             if (millis - lastSendAccData > 100) {
 
                 acc = event.values;
-                sendSensorData("GAME_ROTATION", (mYaw / 360), mPitch / 90, acc, mRotationMatrix, mRoll);
+                sendSensorData("GAME_ROTATION", (mYaw / 360), mPitch / 90, acc, mRotationMatrix, mRoll, beschleunigung);
 
                 //Log.d("linAcc", String.format("%.3f\t%.3f\t%.3f", v[0], v[1], v[2]));
                 lastSendAccData = millis;

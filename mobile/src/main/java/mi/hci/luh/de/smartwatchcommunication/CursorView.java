@@ -69,9 +69,10 @@ public class CursorView extends View {
         bubble.draw(canvas);
     }
 
-    protected void setCursor(float x, float y, int width, int height, float rotation) {
+    protected void setCursor(float x, float y, int width, int height, float rotation, float zoom) {
         //Rechteck um den Cursor herumzeichnen
-        int zone = 40;
+        int zone = 40 - (int) zoom;
+        if (zone > 80) zone = 80;
         int rect_left = (int) x - zone;
         int rect_top = (int) y - zone;
         int rect_right = (int) x + diameter + zone;

@@ -25,7 +25,7 @@ import com.google.android.gms.wearable.Wearable;
  */
 
 public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
-    private final Float[] lastData = new Float[3];
+    private final Float[] lastData = new Float[4];
     private final Float[] calibration = new Float[3];
     long startTime = 0;
     Handler timerHandler = new Handler();
@@ -52,9 +52,10 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
                         lastData[0] = dataMapItem.getDataMap().getFloat("x");
                         lastData[1] = dataMapItem.getDataMap().getFloat("y");
                         lastData[2] = dataMapItem.getDataMap().getFloat("roll");
+                        lastData[3] = dataMapItem.getDataMap().getFloat("distance");
 
                         //Startwerte bestimmen
-                        if (calibration[0]==0){
+                        if (calibration[0] == 0) {
                             calibration[0] = lastData[0];
                             calibration[1] = lastData[1];
                             calibration[2] = lastData[2];
@@ -132,7 +133,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
 
             //Umrechnung an die Kalibrierung
             int vertical = (int) (lastData[1] * height) + height / 2;
-            int horizontal = (int) ((lastData[0] - calibration[0])*4 * width + width / 2);
+            int horizontal = (int) ((lastData[0] - calibration[0]) * 4 * width + width / 2);
             if (horizontal > width) {
                 horizontal -= width;
             } else if (horizontal < 0) {
@@ -155,7 +156,7 @@ public class SensorAnalysis extends FragmentActivity implements GoogleApiClient.
             pointX = horizontal;
             pointY = vertical;
 
-            cursorView.setCursor(horizontal, vertical, width, height, lastData[2]);
+            cursorView.setCursor(horizontal, vertical, width, height, lastData[2], lastData[3]);
             cursorView.invalidate();
         }
     }
